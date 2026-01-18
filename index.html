@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Modo Caverna OS - Sistema de Produtividade para Engenharia">
+    <title>Modo Caverna OS | System Kernel v7.0</title>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M10 90L30 20L70 20L90 90%22 stroke=%22%23ef4444%22 stroke-width=%224%22 fill=%22none%22/></svg>">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="Modo Caverna">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#050505">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://017thiagoo.github.io/modo-caverna">
+    <meta property="og:title" content="Modo Caverna OS | Produtividade Engenharia">
+    <meta property="og:description" content="Sistema operacional de foco e gestão financeira para engenheiros.">
+    
+    <meta property="og:image" content="https://017thiagoo.github.io/modo-caverna">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Modo Caverna OS">
+    <meta name="twitter:description" content="Sistema de produtividade extremo.">
+    <meta name="twitter:image" content="https://017thiagoo.github.io/modo-caverna">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;300;400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* =========================================
+        1. CORE VARIABLES & RESET
+        ========================================= */
+        :root {
+            --color-bg-body: #050505;
+            --color-bg-sidebar: #090909;
+            --color-bg-card: rgba(18, 18, 18, 0.65);
+            --color-bg-card-hover: rgba(25, 25, 25, 0.85);
+            --color-bg-input: #0f0f0f;
+            --color-primary: #ef4444;
+            --color-text-main: #f3f4f6;
+            --color-text-muted: #9ca3af;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+            
+            /* Variáveis Bancárias */
+            --brand-nubank: #820ad1;
+            --brand-inter: #ff7a00;
+            --brand-bb: #fce300;
+            --brand-caixa: #005ca9;
+
+            --glass-border: 1px solid rgba(255, 255, 255, 0.06);
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            color-scheme: dark; /* Calendário Escuro */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--color-bg-body);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(239, 68, 68, 0.03) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.03) 0%, transparent 20%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+            color: var(--color-text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-size: 15px;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* =========================================
+        2. SIDEBAR
+        ========================================= */
+        .sidebar {
+            width: 280px;
+            background: var(--color-bg-sidebar);
+            border-right: var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            z-index: 50;
+            transition: 0.3s;
+        }
+
+        .brand-container { margin-bottom: 3rem; padding-left: 0.5rem; }
+        .brand-logo-container { display: flex; align-items: center; gap: 12px; }
+        .svg-logo { width: 40px; height: 40px; }
+        .brand-text {
+            font-size: 1.1rem; color: var(--color-primary); font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1.5px; line-height: 1;
+        }
+
+        .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+        .nav-btn {
+            background: transparent; border: none; color: var(--color-text-muted);
+            padding: 14px 16px; text-align: left; cursor: pointer; border-radius: var(--radius-md);
+            font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 14px;
+            transition: 0.3s;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--color-text-main); }
+        .nav-btn.active {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
+            color: var(--color-primary); border-left: 3px solid var(--color-primary);
+        }
+
+        /* =========================================
+        3. LAYOUT & CARDS
+        ========================================= */
+        .main-content { flex: 1; padding: 2.5rem 3rem; overflow-y: auto; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1.5rem;
+        }
+        .header-title-group h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .header-subtitle { font-size: 0.9rem; color: var(--color-text-muted); }
+        .system-status { font-size: 0.8rem; color: var(--color-success); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; background: var(--color-success); border-radius: 50%; box-shadow: 0 0 10px var(--color-success); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        .grid-container { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.5rem; }
+        .col-4 { grid-column: span 4; }
+        .col-6 { grid-column: span 6; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+
+        .card {
+            background: var(--color-bg-card); border: var(--glass-border); border-radius: var(--radius-lg);
+            padding: 1.8rem; backdrop-filter: blur(16px); position: relative; overflow: hidden;
+            display: flex; flex-direction: column; transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-2px); background: var(--color-bg-card-hover); border-color: rgba(255,255,255,0.15); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .card-title { font-size: 0.85rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .card-action-btn { background: transparent; border: 1px solid var(--color-primary-border); color: var(--color-primary); padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .card-action-btn:hover { background: rgba(239, 68, 68, 0.15); }
+
+        /* --- CLASSE PARA IGUALAR OS MÓDULOS --- */
+        .card-centralizado {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            /* Altura mínima para ficarem iguais quando vazios */
+            min-height: 400px; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 2. Estilo Padronizado para Mensagens de "Nada Encontrado" */
+        .empty-state {
+            flex: 1; /* Faz a mensagem ocupar todo o espaço restante do card */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.01);
+            /* Garante que funcione dentro do Grid de Hábitos */
+            grid-column: 1 / -1; 
+        }
+
+        /* =========================================
+        4. FINANCEIRO
+        ========================================= */
+        .bank-card {
+            background: linear-gradient(145deg, #18181b, #050505); border: 1px solid rgba(255,255,255,0.05);
+            padding: 1.2rem; border-radius: var(--radius-md); margin-bottom: 1rem; display: flex;
+            justify-content: space-between; align-items: center; border-left: 4px solid #333;
+        }
+        .bank-nubank { border-left-color: var(--brand-nubank); }
+        .bank-inter { border-left-color: var(--brand-inter); }
+        .bank-bb { border-left-color: var(--brand-bb); }
+        .bank-caixa { border-left-color: var(--brand-caixa); }
+        .bank-info h4 { font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px; }
+        .bank-balance { font-size: 1.3rem; font-weight: 700; }
+
+        .transaction-list { max-height: 300px; overflow-y: auto; padding-right: 5px; }
+        .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.9rem; }
+        .trans-desc { font-weight: 500; color: #eee; }
+        .trans-date { font-size: 0.75rem; color: #666; display: block; }
+        .amount-inc { color: var(--color-success); font-weight: 600; }
+        .amount-exp { color: var(--color-danger); font-weight: 600; }
+
+        /* =========================================
+        5. INPUTS & UTILS
+        ========================================= */
+        .form-control {
+            width: 100%; background: var(--color-bg-input); border: 1px solid #333; color: white;
+            padding: 12px 16px; border-radius: var(--radius-sm); font-family: 'Inter', sans-serif;
+            font-size: 0.9rem; outline: none; transition: 0.2s; margin-bottom: 10px;
+        }
+        .form-control:focus { border-color: var(--color-primary); }
+
+        .btn-primary {
+            width: 100%; background: var(--color-primary); color: white; border: none; padding: 12px;
+            border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-primary:hover { background: var(--color-primary-dark); }
+        .btn-success { flex: 1; background: var(--color-success); color: white; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
+        .btn-danger { flex: 1; background: var(--color-danger); color: white; border: none; padding: 12px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
+        .btn-group { display: flex; gap: 10px; }
+
+        /* Inputs de Data */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(28%) sepia(93%) saturate(2256%) hue-rotate(346deg) brightness(96%) contrast(92%);
+            cursor: pointer;
+        }
+
+        /* =========================================
+        6. LISTAS (TASKS/HÁBITOS)
+        ========================================= */
+        .task-item, .habit-card-mini {
+            background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s;
+        }
+        .task-item:hover, .habit-card-mini:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); }
+
+        .priority-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 8px; border: 1px solid currentColor; }
+        .p-high { color: var(--color-danger); background: rgba(239,68,68,0.1); }
+        .p-med { color: var(--color-warning); background: rgba(245,158,11,0.1); }
+        .p-low { color: var(--color-success); background: rgba(16,185,129,0.1); }
+
+        .cat-badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: #888; text-transform: uppercase; }
+
+        /* Grid de Hábitos */
+        .habit-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .habit-card-mini { display: block; } /* Sobrescreve flex */
+        .habit-days { display: flex; justify-content: space-between; margin-top: 10px; }
+        .habit-day-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .habit-day-label { font-size: 0.65rem; color: #666; font-family: 'JetBrains Mono'; }
+        .day-check { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #333; cursor: pointer; transition: 0.2s; }
+        .day-check.checked { background: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+
+        /* =========================================
+        7. EXTRAS & VIDEO
+        ========================================= */
+        .youtube-widget { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; }
+        .youtube-header { font-size: 0.75rem; color: #888; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
+        .video-container { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* Classe para esconder coisas no PC */
+        .mobile-only { display: none; }
+
+        /* =========================================
+        8. RESPONSIVIDADE (MOBILE)
+        ========================================= */
+        .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #050505; border-top: 1px solid #222; padding: 10px 20px 5px 20px; justify-content: space-around; z-index: 1000; }
+        .mob-link { background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 4px; }
+        .mob-link.active { color: var(--color-primary); transform: translateY(-2px); }
+        .mob-link i { font-size: 1.4rem; margin-bottom: 2px; }
+
+        /* --- SUBSTITUA O BLOCO @MEDIA (MOBILE) POR ESTE --- */
+        @media (max-width: 768px) {
+            /* 1. Esconde coisas de PC */
+            .sidebar, .youtube-widget { display: none !important; }
+            .mobile-nav { display: flex; }
+            .mobile-only { display: block !important; }
+
+            /* 2. SAUDAÇÃO FIXA (Agora usamos 2rem cravados) */
+            .main-content { 
+                padding: 5rem 1rem 8rem 1rem !important; 
+            }
+            
+            .header-title-group h1 { font-size: 1.5rem; }
+            
+            /* 3. Layout Geral */
+            .grid-container { display: flex; flex-direction: column; gap: 1.5rem; }
+            .col-4, .col-6, .col-8, .col-12 { width: 100%; }
+            .card { padding: 1.2rem; }
+            .mobile-nav { padding: 10px 20px 10px 20px; height: auto; }
+
+            /* 4. PADRONIZAÇÃO DE INPUTS */
+            .input-group-row, 
+            #financeiro .input-group-row { 
+                flex-direction: column !important;
+                gap: 0 !important;
+                margin-bottom: 15px !important;
+            }
+
+            .form-control, 
+            .btn-primary, 
+            input[type="date"] {
+                width: 100% !important;
+                margin-bottom: 12px !important;
+                flex: none !important;
+                height: 45px !important;
+                line-height: 45px;
+                font-size: 0.9rem !important;
+                padding: 0 12px !important;
+                box-sizing: border-box !important;
+            }
+            
+            .input-group-row .form-control:last-child,
+            .input-group-row .btn-primary {
+                margin-bottom: 0 !important;
+            }
+
+            .btn-primary { justify-content: center !important; }
+
+            input[type="date"] {
+                -webkit-appearance: none;
+                appearance: none;
+                display: block;
+            }
+
+            .btns-financeiro {
+                flex-direction: row !important;
+                gap: 10px !important;
+                margin-top: 5px;
+            }
+            .btns-financeiro button {
+                width: 100% !important;
+                height: 40px !important;
+                margin-bottom: 0 !important;
+                display: flex; align-items: center; justify-content: center;
+            }
+
+            .card-header select {
+                width: 100px !important;
+                height: 35px !important;
+                font-size: 0.8rem !important;
+                margin-bottom: 0 !important;
+            }
+        }
+        
+        /* --- AJUSTE DESKTOP (PC) --- */
+        /* Garante que o filtro "Todos" tenha o mesmo tamanho em todas as abas no PC */
+        /* --- ADICIONE NO FINAL DO CSS (PARA O PC) --- */
+        @media (min-width: 769px) {
+            /* Força os filtros (Todos/Diário...) a terem largura fixa no PC */
+            #task-view-filter, 
+            #habit-view-filter, 
+            #lib-view-filter {
+                width: 140px !important;
+                text-align: center;
+                text-align-last: center; /* Para navegadores mais recentes */
+                cursor: pointer;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand-container">
+            <div class="brand-logo-container">
+                <svg class="svg-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 90L30 20L70 20L90 90" stroke="var(--color-primary)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="rgba(239, 68, 68, 0.05)"/>
+                    <path d="M30 60L50 45L70 60" stroke="var(--color-primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+                    
+                    <circle cx="50" cy="75" r="6" fill="var(--color-primary)">
+                        <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+                <span class="brand-text">
+                    Modo<br>Caverna
+                </span>
+            </div>
+        </div>
+        
+        <nav class="nav-menu">
+            <button class="nav-btn active" onclick="System.navigate('dashboard')">
+                <i class="fas fa-chart-pie"></i> Visão Geral
+            </button>
+            <button class="nav-btn" onclick="System.navigate('financeiro')">
+                <i class="fas fa-university"></i> Central Bancária
+            </button>
+            <button class="nav-btn" onclick="System.navigate('tarefas')">
+                <i class="fas fa-tasks"></i> Tarefas
+            </button>
+            <button class="nav-btn" onclick="System.navigate('habitos')">
+                <i class="fas fa-stopwatch"></i> Hábitos
+            </button>
+            <button class="nav-btn" onclick="System.navigate('biblioteca')">
+                <i class="fas fa-book"></i> Biblioteca
+            </button>
+        </nav>
+
+        <div class="youtube-widget">
+            <div class="youtube-header">
+                <i class="fab fa-youtube" style="color: #ff0000;"></i> FOCUS STATION
+            </div>
+            
+            <div class="video-container">
+                <iframe 
+                    src="https://www.youtube.com/embed/9Lu9Y36uKtI?start=60&controls=1&modestbranding=1" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="fade-in">
+            <div class="header-title-group">
+                <h1 class="mono" id="greeting-text">Inicializando Sistema...</h1>
+                <p class="header-subtitle mono">> Usuário: Engenheiro | Nível de Acesso: Root</p>
+            </div>
+            <div class="system-status mono">
+                <div class="status-dot"></div>
+                SYSTEM ONLINE v7.0
+            </div>
+        </header>
+
+        <div id="dashboard" class="view-section fade-in">
+            <div class="grid-container">
+                
+                <div class="card col-12 mobile-only">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <i class="fab fa-youtube" style="color: #ff0000; margin-right: 8px;"></i> 
+                            Focus Station
+                        </span>
+                    </div>
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/9Lu9Y36uKtI?start=60&controls=1&modestbranding=1" title="Focus Mode" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="card col-4">
+                    <div class="card-header">
+                        <span class="card-title"><i class="fas fa-wallet" style="margin-right:8px; color:var(--color-primary)"></i> Patrimônio Total</span>
+                    </div>
+                    <h2 class="mono" style="font-size: 2.5rem; font-weight: 700;">R$ <span id="dash-total-equity">0.00</span></h2>
+                    <small style="color: var(--color-text-muted); margin-top: 5px;">Consolidado de todas as contas</small>
+                </div>
+
+                <div class="card col-4">
+                    <div class="card-header">
+                        <span class="card-title"><i class="fas fa-check-double" style="margin-right:8px; color:var(--color-success)"></i> Produtividade</span>
+                    </div>
+                    <div style="display: flex; gap: 20px;">
+                        <div>
+                            <h2 style="font-size: 2rem;" id="dash-pending-tasks">0</h2>
+                            <small class="mono" style="color: var(--color-text-muted);">Pendentes</small>
+                        </div>
+                        <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+                        <div>
+                            <h2 style="font-size: 2rem;" id="dash-today-tasks">0</h2>
+                            <small class="mono" style="color: var(--color-text-muted);">Para Hoje</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card col-4">
+                    <div class="card-header"><span class="card-title">Performance</span></div>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><span class="card-title">Distribuição de Ativos</span></div>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="distChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><span class="card-title">Fluxo de Caixa (Mensal)</span></div>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="flowChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card col-12">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <i class="fas fa-shield-alt" style="margin-right:8px; color:var(--color-info)"></i> 
+                            Segurança de Dados
+                        </span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="System.backup()" style="background: var(--color-info); flex: 1;">
+                            <i class="fas fa-download"></i> Baixar Dados (Backup)
+                        </button>
+                        
+                        <button class="btn-primary" onclick="document.getElementById('restore-file').click()" style="background: var(--color-warning); flex: 1;">
+                            <i class="fas fa-upload"></i> Restaurar Dados
+                        </button>
+                        
+                        <input type="file" id="restore-file" style="display:none" accept=".json" onchange="System.restore(this)">
+                    </div>
+                    
+                    <small style="color: var(--color-text-muted); margin-top: 15px; display: block; font-size: 0.8rem;">
+                        <i class="fas fa-info-circle"></i> <strong>Importante:</strong> Seus dados ficam salvos apenas neste navegador. Faça backups semanais ou antes de limpar o cache.
+                    </small>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="financeiro" class="view-section hidden fade-in">
+            <div class="grid-container">
+                
+                <div class="card col-6">
+                    <div class="card-header">
+                        <span class="card-title">Contas Vinculadas</span>
+                        <button class="card-action-btn" onclick="UI.toggle('bank-add-form')">+ Nova Conta</button>
+                    </div>
+                    <div id="bank-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
+                        <select id="bank-select" class="form-control">
+                            <option value="Nubank">Nubank</option>
+                            <option value="Inter">Banco Inter</option>
+                            <option value="Banco do Brasil">Banco do Brasil</option>
+                            <option value="Caixa">Caixa Econômica</option>
+                        </select>
+                        <input type="number" id="bank-balance-init" class="form-control" placeholder="Saldo Inicial (R$)">
+                        <button class="btn-primary" onclick="FinanceModule.addAccount()">Salvar</button>
+                    </div>
+                    <div id="bank-list-container"></div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header">
+                        <span class="card-title">Registro de Operações</span>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed rgba(255,255,255,0.1);">
+                        <label style="font-size: 0.8rem; color: #888; display:block; margin-bottom:5px;">Data da Transação:</label>
+                        
+                        <input type="date" id="trans-date" class="form-control" style="margin-bottom: 10px;">
+                        <input type="text" id="trans-desc" class="form-control" placeholder="Descrição (ex: Almoço)" style="margin-bottom: 10px;">
+                        
+                        <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
+                            <input type="number" id="trans-val" class="form-control" placeholder="Valor (R$)">
+                            <select id="trans-account-select" class="form-control">
+                                <option value="" disabled selected>Selecione a Conta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="btn-group btns-financeiro" style="width: 100%;">
+                            <button class="btn-danger" onclick="FinanceModule.addTransaction('expense')">
+                                <i class="fas fa-arrow-down"></i> Saída
+                            </button>
+                            <button class="btn-success" onclick="FinanceModule.addTransaction('income')">
+                                <i class="fas fa-arrow-up"></i> Entrada
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-header" style="margin-bottom: 10px;">
+                        <span class="card-title">Histórico Recente</span>
+                    </div>
+                    <div id="transaction-log" class="transaction-list"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="tarefas" class="view-section hidden fade-in">
+            <div class="card card-centralizado">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span class="card-title">Backlog de Execução</span>
+                    <select id="task-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="TaskModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="Diário">Diários</option>
+                        <option value="Semanal">Semanais</option>
+                        <option value="Mensal">Mensais</option>
+                    </select>
+                </div>
+                
+                <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
+                    <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; width: 130px;">
+                    <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
+                        <option value="Geral">Geral</option>
+                        <option value="Diário">Diário</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
+                    <select id="task-prio" class="form-control" style="margin-bottom: 0; width: 100px;">
+                        <option value="HIGH">Alta</option>
+                        <option value="MED">Média</option>
+                        <option value="LOW">Baixa</option>
+                    </select>
+                    <button class="btn-primary" style="width: auto;" onclick="TaskModule.add()">Adicionar</button>
+                </div>
+
+                <div id="task-list-container"></div>
+            </div>
+        </div>
+
+        <div id="habitos" class="view-section hidden fade-in">
+            <div class="card card-centralizado">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span class="card-title">Protocolo</span>
+                    <select id="habit-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="HabitModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="Diário">Diários</option>
+                        <option value="Semanal">Semanais</option>
+                        <option value="Mensal">Mensais</option>
+                    </select>
+                </div>
+
+                <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <input type="text" id="habit-input" class="form-control" placeholder="Novo hábito..." style="margin-bottom: 0; flex: 2;">
+                    <select id="habit-freq" class="form-control" style="margin-bottom: 0; width: 130px;">
+                        <option value="Diário">Diário</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
+                    <button class="btn-primary" style="width: auto;" onclick="HabitModule.add()">Adicionar</button>
+                </div>
+                
+                <div id="habit-list-container" class="habit-grid-container"></div>
+            </div>
+        </div>
+
+        <div id="biblioteca" class="view-section hidden fade-in">
+            <div class="card card-centralizado">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span class="card-title">Base de Conhecimento</span>
+                    <select id="lib-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="LibraryModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="Diário">Diários</option>
+                        <option value="Semanal">Semanais</option>
+                        <option value="Mensal">Mensais</option>
+                    </select>
+                </div>
+
+                <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <input type="text" id="book-input" class="form-control" placeholder="Título..." style="margin-bottom: 0; flex: 2;">
+                    <select id="book-type" class="form-control" style="width: 100px; margin-bottom: 0;">
+                        <option value="book">Livro</option>
+                        <option value="course">Curso</option>
+                    </select>
+                    <select id="book-freq" class="form-control" style="width: 110px; margin-bottom: 0;">
+                        <option value="Diário">Diário</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
+                    <button class="btn-primary" style="width: auto;" onclick="LibraryModule.add()">Adicionar</button>
+                </div>
+                
+                <div id="library-list-container"></div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="mobile-nav">
+        <button class="mob-link active" onclick="System.navigate('dashboard')">
+            <i class="fas fa-home"></i> Home
+        </button>
+        <button class="mob-link" onclick="System.navigate('financeiro')">
+            <i class="fas fa-wallet"></i> Banco
+        </button>
+        <button class="mob-link" onclick="System.navigate('tarefas')">
+            <i class="fas fa-check-square"></i> Tarefas
+        </button>
+        <button class="mob-link" onclick="System.navigate('habitos')">
+            <i class="fas fa-fire"></i> Hábitos
+        </button>
+        <button class="mob-link" onclick="System.navigate('biblioteca')">
+            <i class="fas fa-book"></i> Biblio
+        </button>
+    </nav>
+
+    <script>
+        /**
+         * MODO CAVERNA OS v6.0 - SYSTEM KERNEL
+         * Architecture: State-Based Single Page Application (SPA)
+         */
+
+        // --- 1. STATE MANAGEMENT ---
+        const DB = {
+            key: 'caverna_os_v6',
+            state: {
+                banks: [],
+                transactions: [],
+                tasks: [],
+                habits: [],
+                library: []
+            },
+            init() {
+                const saved = localStorage.getItem(this.key);
+                if (saved) this.state = JSON.parse(saved);
+            },
+            save() {
+                localStorage.setItem(this.key, JSON.stringify(this.state));
+                System.refreshAll();
+            }
+        };
+
+        // --- 2. SYSTEM CONTROLLER ---
+        const System = {
+            init() {
+                DB.init();
+                this.updateGreeting();
+                FinanceModule.init();
+                this.refreshAll();
+            },
+
+            updateGreeting() {
+                const h = new Date().getHours();
+                const d = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                document.getElementById('greeting-text').innerText = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, Engenheiro.`;
+            },
+
+            navigate(viewId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                document.getElementById(viewId).classList.remove('hidden');
+                document.querySelectorAll('.nav-btn, .mob-link').forEach(el => el.classList.remove('active'));
+                if (event && event.currentTarget) event.currentTarget.classList.add('active');
+                if (viewId === 'dashboard' || viewId === 'financeiro') {
+                    setTimeout(() => ChartsModule.renderAll(), 100);
+                }
+            },
+
+            refreshAll() {
+                FinanceModule.render();
+                TaskModule.render();
+                HabitModule.render();
+                LibraryModule.render();
+                ChartsModule.renderAll();
+                this.updateDashboardKPIs();
+            },
+
+            updateDashboardKPIs() {
+                const totalEquity = DB.state.banks.reduce((acc, b) => acc + b.balance, 0);
+                document.getElementById('dash-total-equity').innerText = totalEquity.toFixed(2);
+                document.getElementById('dash-pending-tasks').innerText = DB.state.tasks.filter(t => !t.done).length;
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('dash-today-tasks').innerText = DB.state.tasks.filter(t => t.date === today).length;
+            },
+
+            // --- FUNÇÕES DE BACKUP ---
+            backup() {
+                // Cria um arquivo JSON com os dados atuais
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(DB.state));
+                const downloadAnchorNode = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10);
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", `backup_modo_caverna_${date}.json`);
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            },
+
+            restore(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        // Validação simples para ver se é um arquivo do sistema
+                        if (data.banks && data.tasks && data.habits) {
+                            if(confirm("Isso irá substituir todos os dados atuais pelos do backup. Continuar?")) {
+                                DB.state = data;
+                                DB.save();
+                                alert("Sistema restaurado com sucesso!");
+                                location.reload(); // Recarrega para aplicar tudo
+                            }
+                        } else {
+                            alert("Erro: O arquivo selecionado não é um backup válido do Modo Caverna.");
+                        }
+                    } catch (err) {
+                        alert("Erro ao ler o arquivo de backup.");
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // --- 3. FINANCE MODULE ---
+        const FinanceModule = {
+            init() {
+                // Define data de hoje nos calendários
+                const today = new Date().toISOString().split('T')[0];
+                const tDate = document.getElementById('trans-date');
+                const kDate = document.getElementById('task-date');
+                if (tDate) tDate.value = today;
+                if (kDate) kDate.value = today;
+            },
+
+            addAccount() {
+                const name = document.getElementById('bank-select').value;
+                const bal = parseFloat(document.getElementById('bank-balance-init').value);
+                if (name && !isNaN(bal)) {
+                    DB.state.banks.push({ id: Date.now(), name, balance: bal });
+                    document.getElementById('bank-balance-init').value = '';
+                    UI.toggle('bank-add-form');
+                    DB.save();
+                }
+            },
+
+            deleteAccount(id) {
+                if(confirm("Deseja apagar esta conta?")) {
+                    DB.state.banks = DB.state.banks.filter(b => b.id !== id);
+                    DB.save();
+                }
+            },
+
+            editAccount(id) {
+                const bank = DB.state.banks.find(b => b.id === id);
+                if(bank) {
+                    const novo = prompt("Novo saldo:", bank.balance);
+                    if(novo && !isNaN(novo)) {
+                        bank.balance = parseFloat(novo);
+                        DB.save();
+                    }
+                }
+            },
+
+            addTransaction(type) {
+                const desc = document.getElementById('trans-desc').value;
+                const val = parseFloat(document.getElementById('trans-val').value);
+                const accId = parseInt(document.getElementById('trans-account-select').value);
+                const dateVal = document.getElementById('trans-date').value;
+
+                if (desc && !isNaN(val) && accId && dateVal) {
+                    const bank = DB.state.banks.find(b => b.id === accId);
+                    if (bank) {
+                        // Atualiza Saldo
+                        if (type === 'income') bank.balance += val;
+                        else bank.balance -= val;
+
+                        // Salva Transação
+                        const [ano, mes, dia] = dateVal.split('-'); // Formata data visual
+                        DB.state.transactions.unshift({
+                            id: Date.now(),
+                            date: `${dia}/${mes}/${ano}`,
+                            desc,
+                            val,
+                            type,
+                            accName: bank.name
+                        });
+
+                        // Limpa campos
+                        document.getElementById('trans-desc').value = '';
+                        document.getElementById('trans-val').value = '';
+                        DB.save();
+                    }
+                } else {
+                    alert("Preencha todos os campos!");
+                }
+            },
+
+            // --- NOVA FUNÇÃO: Excluir Transação do Histórico ---
+            deleteTransaction(id) {
+                const trans = DB.state.transactions.find(t => t.id === id);
+                if (trans && confirm("Excluir transação? O saldo da conta será revertido.")) {
+                    // Reverte o saldo no banco
+                    const bank = DB.state.banks.find(b => b.name === trans.accName);
+                    if (bank) {
+                        if (trans.type === 'income') bank.balance -= trans.val; // Tira o que entrou
+                        else bank.balance += trans.val; // Devolve o que saiu
+                    }
+                    // Remove da lista
+                    DB.state.transactions = DB.state.transactions.filter(t => t.id !== id);
+                    DB.save();
+                }
+            },
+
+            // --- NOVA FUNÇÃO: Editar Transação ---
+            editTransaction(id) {
+                const trans = DB.state.transactions.find(t => t.id === id);
+                if (!trans) return;
+
+                const novaDesc = prompt("Nova descrição:", trans.desc);
+                if (novaDesc === null) return;
+
+                const novoValorStr = prompt("Novo valor (R$):", trans.val);
+                const novoValor = parseFloat(novoValorStr);
+
+                if (novaDesc && !isNaN(novoValor)) {
+                    // Ajusta o saldo do banco se o valor mudou
+                    if (novoValor !== trans.val) {
+                        const bank = DB.state.banks.find(b => b.name === trans.accName);
+                        if (bank) {
+                            // Reverte valor antigo
+                            if (trans.type === 'income') bank.balance -= trans.val;
+                            else bank.balance += trans.val;
+                            
+                            // Aplica valor novo
+                            if (trans.type === 'income') bank.balance += novoValor;
+                            else bank.balance -= novoValor;
+                        }
+                    }
+                    // Atualiza objeto
+                    trans.desc = novaDesc;
+                    trans.val = novoValor;
+                    DB.save();
+                }
+            },
+
+            render() {
+                // Renderiza Bancos
+                const list = document.getElementById('bank-list-container');
+                const select = document.getElementById('trans-account-select');
+                list.innerHTML = '';
+                select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
+
+                if (DB.state.banks.length === 0) list.innerHTML = '<p style="color:#666; text-align:center; padding:10px;">Nenhuma conta vinculada.</p>';
+
+                DB.state.banks.forEach(b => {
+                    let brandClass = '';
+                    if (b.name === 'Nubank') brandClass = 'bank-nubank';
+                    else if (b.name === 'Inter') brandClass = 'bank-inter';
+                    else if (b.name === 'Banco do Brasil') brandClass = 'bank-bb';
+                    else if (b.name === 'Caixa') brandClass = 'bank-caixa';
+
+                    list.innerHTML += `
+                        <div class="bank-card ${brandClass}">
+                            <div class="bank-info">
+                                <h4 class="mono">${b.name}</h4>
+                                <div class="bank-balance">R$ ${b.balance.toFixed(2)}</div>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <i class="fas fa-edit" onclick="FinanceModule.editAccount(${b.id})" style="cursor:pointer; color:#666;" title="Editar Saldo"></i>
+                                <i class="fas fa-trash" onclick="FinanceModule.deleteAccount(${b.id})" style="cursor:pointer; color:#666;" title="Apagar Conta"></i>
+                            </div>
+                        </div>
+                    `;
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.innerText = b.name;
+                    select.appendChild(opt);
+                });
+
+                // Renderiza Histórico com Botões de Editar/Excluir
+                const log = document.getElementById('transaction-log');
+                log.innerHTML = '';
+                
+                DB.state.transactions.slice(0, 30).forEach(t => {
+                    const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
+                    const sign = t.type === 'income' ? '+' : '-';
+                    
+                    log.innerHTML += `
+                        <div class="transaction-item">
+                            <div class="trans-meta">
+                                <span class="trans-desc">${t.desc}</span>
+                                <span class="trans-date">${t.date} • ${t.accName}</span>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="mono ${colorClass}" style="font-weight:bold;">${sign} R$ ${t.val.toFixed(2)}</div>
+                                <div style="margin-top:4px; display:flex; gap:10px; justify-content:flex-end;">
+                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#666;" title="Editar"></i>
+                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#ef4444;" title="Apagar"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        // --- 4. TASK MODULE ---
+        const TaskModule = {
+            add() {
+                const desc = document.getElementById('task-input').value;
+                const date = document.getElementById('task-date').value;
+                const prio = document.getElementById('task-prio').value;
+                const freq = document.getElementById('task-freq').value; // Pega a frequencia
+
+                if (desc) {
+                    DB.state.tasks.push({ 
+                        desc, 
+                        date, 
+                        prio, 
+                        freq, // Salva a frequencia
+                        done: false 
+                    });
+                    document.getElementById('task-input').value = '';
+                    DB.save();
+                }
+            },
+            toggle(index) {
+                DB.state.tasks[index].done = !DB.state.tasks[index].done;
+                DB.save();
+            },
+            delete(index) {
+                DB.state.tasks.splice(index, 1);
+                DB.save();
+            },
+            render() {
+                const list = document.getElementById('task-list-container');
+                const filter = document.getElementById('task-view-filter').value;
+                
+                list.innerHTML = '';
+                
+                DB.state.tasks.forEach((t, i) => {
+                    // Lógica de Filtro
+                    // Se o filtro não for 'all' e a frequencia da tarefa for diferente do filtro, esconde.
+                    // (Tarefas antigas sem freq são tratadas como 'Geral')
+                    const tarefaFreq = t.freq || 'Geral';
+                    if (filter !== 'all' && tarefaFreq !== filter) return;
+
+                    const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
+                    const doneStyle = t.done ? 'text-decoration: line-through; opacity: 0.5;' : '';
+                    const icon = t.done ? 'fa-check-square' : 'fa-square';
+
+                    list.innerHTML += `
+                        <div class="task-item fade-in">
+                            <div style="display:flex; align-items:center; cursor:pointer; width:100%;" onclick="TaskModule.toggle(${i})">
+                                <i class="far ${icon}" style="margin-right:10px; color:var(--color-primary)"></i>
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                        <span class="priority-badge mono ${prioClass}">${t.prio}</span>
+                                        <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${tarefaFreq}</span>
+                                    </div>
+                                    <span style="${doneStyle}; display:block;">${t.desc}</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <small class="mono" style="color:#666; font-size:0.7rem; white-space:nowrap;">${t.date}</small>
+                                <button onclick="TaskModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // --- SUBSTITUA O FINAL DO RENDER POR ISSO: ---
+                // Se a lista estiver vazia (ou após filtro), mostra o padrão
+                if(list.innerHTML === '') {
+                    // Adiciona altura 100% ao container para o flex funcionar
+                    list.style.flex = '1';
+                    list.style.display = 'flex'; 
+                    list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+                } else {
+                    list.style.display = 'block'; // Reseta display se tiver itens
+                }
+            }
+        };
+
+        // --- 5. HABIT MODULE (CORRIGIDO) ---
+        const HabitModule = {
+            add() {
+                const txt = document.getElementById('habit-input').value;
+                const freq = document.getElementById('habit-freq').value; 
+
+                if (txt) {
+                    DB.state.habits.push({ 
+                        txt, 
+                        freq, 
+                        checks: Array(7).fill(false) 
+                    });
+                    document.getElementById('habit-input').value = '';
+                    DB.save();
+                }
+            },
+
+            toggle(hIdx, dayIdx) {
+                if (!DB.state.habits[hIdx].checks) {
+                    DB.state.habits[hIdx].checks = Array(7).fill(false);
+                }
+                DB.state.habits[hIdx].checks[dayIdx] = !DB.state.habits[hIdx].checks[dayIdx];
+                DB.save();
+            },
+
+            delete(index) {
+                if(confirm("Apagar hábito?")) {
+                    DB.state.habits.splice(index, 1);
+                    DB.save();
+                }
+            },
+
+            render() {
+                const container = document.getElementById('habit-list-container');
+                const filterEl = document.getElementById('habit-view-filter');
+                const filter = filterEl ? filterEl.value : 'all';
+                
+                container.innerHTML = '';
+
+                const daysLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+                DB.state.habits.forEach((h, i) => {
+                    if (filter !== 'all' && h.freq !== filter) return;
+
+                    const frequencia = h.freq || 'Diário';
+                    let checksHtml = '';
+                    if (!h.checks) h.checks = Array(7).fill(false);
+
+                    h.checks.forEach((isChecked, d) => {
+                        const activeClass = isChecked ? 'checked' : '';
+                        checksHtml += `
+                            <div class="habit-day-col">
+                                <span class="habit-day-label">${daysLabels[d]}</span>
+                                <div class="day-check ${activeClass}" onclick="HabitModule.toggle(${i}, ${d})"></div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML += `
+                        <div class="habit-card-mini fade-in">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div>
+                                    <span style="font-weight:600;">${h.txt}</span>
+                                    <span class="cat-badge">${frequencia}</span>
+                                </div>
+                                <i class="fas fa-times" onclick="HabitModule.delete(${i})" style="cursor:pointer; color:#444; font-size:0.8rem;"></i>
+                            </div>
+                            <div class="habit-days" style="gap:2px;">${checksHtml}</div>
+                        </div>
+                    `;
+                });
+                
+                // --- CORREÇÃO DO TAMANHO VAZIO AQUI ---
+                if(container.innerHTML === '') {
+                    // Se vazio, muda para FLEX para esticar a mensagem e centralizar
+                    container.style.display = 'flex';
+                    container.style.flex = '1';
+                    container.innerHTML = '<div class="empty-state">Nenhum hábito encontrado.</div>';
+                } else {
+                    // Se tem itens, volta para GRID para organizar os cards
+                    container.style.display = 'grid';
+                    container.style.flex = 'none';
+                }
+            }
+        };
+
+        // --- 6. LIBRARY MODULE (CORRIGIDO) ---
+        const LibraryModule = {
+            add() {
+                const title = document.getElementById('book-input').value;
+                const type = document.getElementById('book-type').value;
+                const freq = document.getElementById('book-freq').value;
+
+                if(title) {
+                    DB.state.library.push({ title, type, freq });
+                    document.getElementById('book-input').value = '';
+                    DB.save();
+                }
+            },
+
+            delete(i) {
+                if(confirm("Remover item da biblioteca?")) {
+                    DB.state.library.splice(i, 1);
+                    DB.save();
+                }
+            },
+
+            render() {
+                const list = document.getElementById('library-list-container');
+                // Verifica se o filtro existe
+                const filterEl = document.getElementById('lib-view-filter');
+                const filter = filterEl ? filterEl.value : 'all';
+                
+                list.innerHTML = '';
+
+                DB.state.library.forEach((item, i) => {
+                    // Lógica de Filtro
+                    if (filter !== 'all' && item.freq !== filter) return;
+
+                    const icon = item.type === 'book' ? 'fa-book' : 'fa-laptop-code';
+                    const meta = item.freq || 'Geral'; // Fallback para itens antigos
+                    
+                    list.innerHTML += `
+                        <div class="task-item fade-in">
+                            <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                                <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                                    <i class="fas ${icon}" style="color:var(--color-primary)"></i>
+                                    <div>
+                                        <span style="display:block; font-weight:500;">${item.title}</span>
+                                        <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
+                                    </div>
+                                </div>
+                                <button onclick="LibraryModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer; padding:5px;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if(list.innerHTML === '') {
+                    list.style.flex = '1';
+                    list.style.display = 'flex';
+                    list.innerHTML = '<div class="empty-state">A biblioteca está vazia.</div>';
+                } else {
+                    list.style.display = 'block';
+                }
+            }
+        }; // <--- Esta chave fecha o LibraryModule
+
+        // --- 8. CHARTS MODULE (OTIMIZADO) ---
+        const ChartsModule = {
+            instances: {},
+            
+            renderAll() {
+                setTimeout(() => {
+                    this.renderRadar();
+                    this.renderDist();
+                    this.renderFlow();
+                }, 50);
+            },
+
+            // Configuração COM ANIMAÇÃO ativada
+            commonOptions: {
+                responsive: true,
+                maintainAspectRatio: false,
+                // animation: false, <--- REMOVIDO PARA VOLTAR A ANIMAR
+                animation: {
+                    duration: 1000, // 1 segundo de animação
+                    easing: 'easeOutQuart'
+                },
+                plugins: { legend: { display: false } }
+            },
+
+            renderRadar() {
+                const ctx = document.getElementById('radarChart');
+                if (!ctx) return;
+                
+                const tasksTotal = DB.state.tasks.length || 1;
+                const tasksDone = DB.state.tasks.filter(t => t.done).length;
+                const taskScore = (tasksDone / tasksTotal) * 100;
+                
+                const data = {
+                    labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'],
+                    datasets: [{
+                        label: 'Nível Atual',
+                        data: [taskScore, 60, 85, 70, 90], // Dados Mockados para exemplo
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: '#ef4444',
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                };
+
+                if (this.instances.radar) this.instances.radar.destroy();
+                this.instances.radar = new Chart(ctx, {
+                    type: 'radar',
+                    data: data,
+                    options: {
+                        ...this.commonOptions,
+                        scales: {
+                            r: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                angleLines: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { display: false, backdropColor: 'transparent' },
+                                pointLabels: { color: '#888', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
+            },
+
+            renderDist() {
+                const ctx = document.getElementById('distChart');
+                if (!ctx) return;
+
+                const labels = DB.state.banks.map(b => b.name);
+                const values = DB.state.banks.map(b => b.balance);
+                const colors = labels.map(n => {
+                    if(n === 'Nubank') return '#820ad1';
+                    if(n === 'Inter') return '#ff7a00';
+                    if(n === 'Banco do Brasil') return '#fce300';
+                    return '#005ca9';
+                });
+
+                if (this.instances.dist) this.instances.dist.destroy();
+                this.instances.dist = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values.length ? values : [1],
+                            backgroundColor: values.length ? colors : ['#333'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        ...this.commonOptions,
+                        cutout: '70%',
+                        plugins: { legend: { position: 'right', labels: { color: '#888', boxWidth: 10 } } }
+                    }
+                });
+            },
+
+            renderFlow() {
+                const ctx = document.getElementById('flowChart');
+                if (!ctx) return;
+
+                let income = 0, expense = 0;
+                DB.state.transactions.forEach(t => {
+                    if (t.type === 'income') income += t.val;
+                    else expense += t.val;
+                });
+
+                if (this.instances.flow) this.instances.flow.destroy();
+                this.instances.flow = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Entradas', 'Saídas'],
+                        datasets: [{
+                            label: 'R$',
+                            data: [income, expense],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderRadius: 6,
+                            barThickness: 40
+                        }]
+                    },
+                    options: {
+                        ...this.commonOptions,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } },
+                            x: { grid: { display: false }, ticks: { color: '#fff' } }
+                        }
+                    }
+                });
+            }
+        };
+
+        // --- BOOTSTRAP ---
+        window.addEventListener('DOMContentLoaded', () => {
+            System.init();
+        });
+
+    </script>
+</body>
+</html>
