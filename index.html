@@ -233,21 +233,39 @@
         .mob-link.active { color: var(--color-primary); transform: translateY(-2px); }
         .mob-link i { font-size: 1.4rem; margin-bottom: 2px; }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .mobile-nav { display: flex; }
-            .mobile-only { display: block; } /* Mostra vídeo no mobile */
-            .youtube-widget { display: none; } /* Esconde widget da sidebar */
+        /* --- SUBSTITUA TODO O BLOCO @MEDIA DO FINAL DO SEU CSS POR ESTE --- */
 
-            .main-content { padding: 3rem 1rem 7rem 1rem; }
+        @media (max-width: 768px) {
+            /* Esconde a sidebar e o widget do youtube lateral */
+            .sidebar, .youtube-widget { display: none !important; }
+            
+            /* Mostra a navegação inferior */
+            .mobile-nav { display: flex; }
+            
+            /* Mostra elementos exclusivos de celular (como o vídeo no topo) */
+            .mobile-only { display: block !important; }
+
+            /* 1. AJUSTE DE ESPAÇAMENTO NO TOPO (Abaixar o conteúdo) */
+            /* Aumentei para 6rem para descer a saudação e o patrimônio */
+            .main-content { 
+                padding: 6rem 1rem 8rem 1rem; 
+            }
+            
             .header-title-group h1 { font-size: 1.6rem; }
             
+            /* Ajuste do Grid para coluna única */
             .grid-container { display: flex; flex-direction: column; gap: 1.5rem; }
             .col-4, .col-6, .col-8, .col-12 { width: 100%; }
             .card { padding: 1.2rem; }
 
-            /* CORREÇÃO DOS INPUTS DE ADIÇÃO (Tarefas/Hábitos/Lib) */
-            /* Transforma a linha em coluna para não cortar */
+            /* 2. AJUSTE DA NAVEGAÇÃO INFERIOR */
+            .mobile-nav {
+                padding: 10px 20px 10px 20px; /* Reduzi para ficar mais compacta */
+                height: auto;
+            }
+
+            /* CORREÇÃO DOS INPUTS (Tarefas, Hábitos, Biblioteca) */
+            /* Força os inputs a ficarem um embaixo do outro */
             #tarefas .card-header + div,
             #habitos .card-header + div,
             #biblioteca .card-header + div {
@@ -255,15 +273,25 @@
                 align-items: stretch !important;
             }
 
-            /* Faz todos os campos ocuparem 100% da largura */
-            #tarefas input, #tarefas select, #tarefas button,
-            #habitos input, #habitos select, #habitos button,
-            #biblioteca input, #biblioteca select, #biblioteca button {
+            /* Estica os campos para 100% da largura */
+            #task-input, #task-prio, #task-freq, #task-date,
+            #habit-input, #habit-freq,
+            #book-input, #book-type, #book-freq,
+            .btn-primary {
                 width: 100% !important;
                 margin-bottom: 10px !important;
                 flex: none !important;
-                max-width: none !important; /* Remove limites */
+                max-width: none !important;
             }
+
+            /* Ajuste específico para o grupo de data nas tarefas */
+            #tarefas .card-header + div > div {
+                width: 100% !important;
+                display: flex !important;
+                margin-bottom: 10px;
+            }
+            #task-date { flex: 1 !important; margin-bottom: 0 !important; }
+            #tarefas .btn-calendar { width: 45px !important; flex: none; }
         }
 
     </style>
@@ -338,7 +366,8 @@
 
         <div id="dashboard" class="view-section fade-in">
             <div class="grid-container">
-                <div class="card col-12">
+                
+                <div class="card col-12 mobile-only">
                     <div class="card-header">
                         <span class="card-title">
                             <i class="fab fa-youtube" style="color: #ff0000; margin-right: 8px;"></i> 
@@ -346,32 +375,13 @@
                         </span>
                     </div>
                     <div class="video-container">
-                        <iframe src="https://www.youtube.com/embed/9Lu9Y36uKtI?start=60&controls=1&modestbranding=1" title="Focus Mode" frameborder="0" allowfullscreen></iframe>
-                    </div>
-                </div>
-
-                <div class="card col-4">
-                    <div class="card-header">
-                        <span class="card-title"><i class="fas fa-wallet" style="margin-right:8px; color:var(--color-primary)"></i> Patrimônio Total</span>
-                    </div>
-                    <h2 class="mono" style="font-size: 2.5rem; font-weight: 700;">R$ <span id="dash-total-equity">0.00</span></h2>
-                    <small style="color: var(--color-text-muted); margin-top: 5px;">Consolidado de todas as contas</small>
-                </div>
-
-                <div class="card col-4">
-                    <div class="card-header">
-                        <span class="card-title"><i class="fas fa-check-double" style="margin-right:8px; color:var(--color-success)"></i> Produtividade</span>
-                    </div>
-                    <div style="display: flex; gap: 20px;">
-                        <div>
-                            <h2 style="font-size: 2rem;" id="dash-pending-tasks">0</h2>
-                            <small class="mono" style="color: var(--color-text-muted);">Pendentes</small>
-                        </div>
-                        <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-                        <div>
-                            <h2 style="font-size: 2rem;" id="dash-today-tasks">0</h2>
-                            <small class="mono" style="color: var(--color-text-muted);">Para Hoje</small>
-                        </div>
+                        <iframe 
+                            src="https://www.youtube.com/embed/9Lu9Y36uKtI?start=60&controls=1&modestbranding=1" 
+                            title="Focus Mode" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                        </iframe>
                     </div>
                 </div>
 
