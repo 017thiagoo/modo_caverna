@@ -242,9 +242,9 @@
             .mobile-nav { display: flex; }
             .mobile-only { display: block !important; }
 
-            /* 1. SAUDAÇÃO ABAIXADA (Padding aumentado para 8rem / ~3cm visualmente) */
+            /* 1. SAUDAÇÃO AJUSTADA (5rem é o ponto ideal) */
             .main-content { 
-                padding: 8rem 1rem 8rem 1rem; 
+                padding: 5rem 1rem 8rem 1rem; 
             }
             
             .header-title-group h1 { font-size: 1.6rem; }
@@ -260,39 +260,36 @@
                 height: auto;
             }
 
-            /* --- PADRONIZAÇÃO TOTAL DOS INPUTS (Tarefas, Financeiro, Hábitos, Biblioteca) --- */
+            /* --- CORREÇÃO DOS INPUTS E BOTÕES (Tarefas, Banco, etc) --- */
             
-            /* Transforma a linha de inputs em uma pilha vertical */
-            #tarefas .input-group-row,
-            #habitos .input-group-row,
-            #biblioteca .input-group-row,
-            #financeiro .input-group-row { 
+            /* Força os containers de linha a virarem coluna no celular */
+            .input-group-row { 
                 flex-direction: column !important;
                 gap: 10px !important;
                 margin-bottom: 15px !important;
             }
 
-            /* Força TODOS os campos a ocuparem 100% da largura e terem a mesma altura */
-            .form-control, .btn-primary, .btn-danger, .btn-success {
+            /* Garante que inputs e selects ocupem a linha toda */
+            .input-group-row input, 
+            .input-group-row select, 
+            .input-group-row button {
                 width: 100% !important;
-                margin-bottom: 0 !important; /* O gap do container cuida do espaço */
+                margin: 0 !important; /* O gap controla o espaço */
                 flex: none !important;
-                max-width: none !important;
-                height: 48px !important; /* Altura generosa para o toque */
+                height: 48px !important; /* Altura boa para o dedo */
             }
 
             /* Exceção: Botões de Saída/Entrada (Financeiro) ficam lado a lado */
-            #financeiro .btns-financeiro {
+            .btns-financeiro {
                 flex-direction: row !important;
                 gap: 10px !important;
             }
-
-            /* Ajuste específico para o Filtro do Cabeçalho (Botão "Todos") */
+            
+            /* Ajuste do botão de filtro no topo */
             .card-header select {
                 width: auto !important;
                 max-width: 110px !important;
                 height: 35px !important;
-                font-size: 0.8rem !important;
             }
         }
 
@@ -432,6 +429,7 @@
 
         <div id="financeiro" class="view-section hidden fade-in">
             <div class="grid-container">
+                
                 <div class="card col-6">
                     <div class="card-header">
                         <span class="card-title">Contas Vinculadas</span>
@@ -456,7 +454,6 @@
                     </div>
 
                     <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-                        
                         <label style="font-size: 0.8rem; color: #888; display:block; margin-bottom:5px;">Data da Transação:</label>
                         
                         <input type="date" id="trans-date" class="form-control" style="margin-bottom: 10px;">
@@ -485,11 +482,6 @@
                     <div id="transaction-log" class="transaction-list"></div>
                 </div>
 
-                    <div class="card-header" style="margin-bottom: 10px;">
-                        <span class="card-title">Histórico Recente</span>
-                    </div>
-                    <div id="transaction-log" class="transaction-list"></div>
-                </div>
             </div>
         </div>
 
@@ -506,24 +498,20 @@
                 </div>
                 
                 <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-                    <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa...">
-                    
-                    <input type="date" id="task-date" class="form-control">
-                    
-                    <select id="task-freq" class="form-control">
+                    <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
+                    <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; width: 130px;">
+                    <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
                         <option value="Geral">Geral</option>
                         <option value="Diário">Diário</option>
                         <option value="Semanal">Semanal</option>
                         <option value="Mensal">Mensal</option>
                     </select>
-
-                    <select id="task-prio" class="form-control">
+                    <select id="task-prio" class="form-control" style="margin-bottom: 0; width: 100px;">
                         <option value="HIGH">Alta</option>
                         <option value="MED">Média</option>
                         <option value="LOW">Baixa</option>
                     </select>
-                    
-                    <button class="btn-primary" onclick="TaskModule.add()">Push</button>
+                    <button class="btn-primary" style="width: auto;" onclick="TaskModule.add()">Push</button>
                 </div>
 
                 <div id="task-list-container"></div>
