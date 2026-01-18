@@ -305,7 +305,7 @@
                 height: auto;
                 z-index: 9999; /* Garante que fique acima de tudo */
             }
-            
+
             /* 1. Esconde coisas de PC */
             .sidebar, .youtube-widget { display: none !important; }
             .mobile-nav { display: flex; }
@@ -391,6 +391,23 @@
                 text-align-last: center; /* Para navegadores mais recentes */
                 cursor: pointer;
             }
+        }
+
+        /* Estilo para itens concluídos (Texto riscado e opaco) */
+        .item-done {
+            text-decoration: line-through;
+            opacity: 0.5;
+            color: var(--color-text-muted);
+        }
+
+        /* Ícone de Check Ativo (Verde) */
+        .fa-check-circle {
+            color: var(--color-success) !important;
+        }
+
+        /* Ícone de Check Pendente (Cinza) */
+        .fa-circle {
+            color: #444;
         }
 
     </style>
@@ -1174,7 +1191,7 @@
             }
         };
 
-        // --- 6. LIBRARY MODULE (CORRIGIDO) ---
+        // --- 6. LIBRARY MODULE (ATUALIZADO COM CHECK) ---
         const LibraryModule = {
             add() {
                 const title = document.getElementById('book-input').value;
@@ -1182,10 +1199,17 @@
                 const freq = document.getElementById('book-freq').value;
 
                 if(title) {
-                    DB.state.library.push({ title, type, freq });
+                    // Adicionei a propriedade 'done: false'
+                    DB.state.library.push({ title, type, freq, done: false });
                     document.getElementById('book-input').value = '';
                     DB.save();
                 }
+            },
+
+            // NOVA FUNÇÃO: Alternar status de leitura
+            toggle(index) {
+                DB.state.library[index].done = !DB.state.library[index].done;
+                DB.save();
             },
 
             delete(i) {
@@ -1197,30 +1221,42 @@
 
             render() {
                 const list = document.getElementById('library-list-container');
-                // Verifica se o filtro existe
                 const filterEl = document.getElementById('lib-view-filter');
                 const filter = filterEl ? filterEl.value : 'all';
                 
                 list.innerHTML = '';
 
                 DB.state.library.forEach((item, i) => {
-                    // Lógica de Filtro
                     if (filter !== 'all' && item.freq !== filter) return;
 
-                    const icon = item.type === 'book' ? 'fa-book' : 'fa-laptop-code';
-                    const meta = item.freq || 'Geral'; // Fallback para itens antigos
+                    const iconType = item.type === 'book' ? 'fa-book' : 'fa-laptop-code';
+                    const meta = item.freq || 'Geral';
                     
+                    // Lógica visual de Concluído
+                    const isDone = item.done;
+                    const titleClass = isDone ? 'item-done' : '';
+                    const checkIcon = isDone ? 'fa-check-circle' : 'fa-circle'; // Ícone cheio ou vazio
+                    const checkTitle = isDone ? 'Marcar como pendente' : 'Concluir';
+
                     list.innerHTML += `
                         <div class="task-item fade-in">
                             <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                                
+                                <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" 
+                                style="cursor:pointer; font-size:1.1rem; min-width:20px;" 
+                                title="${checkTitle}"></i>
+
                                 <div style="display:flex; align-items:center; gap:10px; flex:1;">
-                                    <i class="fas ${icon}" style="color:var(--color-primary)"></i>
+                                    <i class="fas ${iconType}" style="color:var(--color-primary); font-size:0.9rem; opacity:0.8;"></i>
                                     <div>
-                                        <span style="display:block; font-weight:500;">${item.title}</span>
+                                        <span class="${titleClass}" style="display:block; font-weight:500; transition:0.3s;">${item.title}</span>
                                         <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
                                     </div>
                                 </div>
-                                <button onclick="LibraryModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer; padding:5px;"><i class="fas fa-trash"></i></button>
+                                
+                                <button onclick="LibraryModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer; padding:5px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -1234,7 +1270,7 @@
                     list.style.display = 'block';
                 }
             }
-        }; // <--- Esta chave fecha o LibraryModule
+        };
 
         // --- 8. CHARTS MODULE (OTIMIZADO) ---
         const ChartsModule = {
