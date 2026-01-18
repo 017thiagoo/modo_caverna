@@ -414,6 +414,8 @@
 </head>
 <body>
 
+    <audio id="notification-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
     <aside class="sidebar">
         <div class="brand-container">
             <div class="brand-logo-container">
@@ -641,13 +643,18 @@
                 
                 <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
                     <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
+                    
                     <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; width: 130px;">
+                    
+                    <input type="time" id="task-time" class="form-control" style="margin-bottom: 0; width: 100px;">
+                    
                     <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
                         <option value="Geral">Geral</option>
                         <option value="Diário">Diário</option>
                         <option value="Semanal">Semanal</option>
                         <option value="Mensal">Mensal</option>
                     </select>
+                    
                     <select id="task-prio" class="form-control" style="margin-bottom: 0; width: 100px;">
                         <option value="HIGH">Alta</option>
                         <option value="MED">Média</option>
@@ -741,6 +748,77 @@
          * Architecture: State-Based Single Page Application (SPA)
          */
 
+        // --- 0. NOTIFICATION MODULE ---
+        const NotificationModule = {
+            permission: false,
+
+            async init() {
+                if ("Notification" in window) {
+                    const result = await Notification.requestPermission();
+                    this.permission = result === 'granted';
+                    
+                    // Faz a primeira verificação ao iniciar
+                    if (this.permission) {
+                        this.checkDailyTasks();
+                    }
+                }
+            },
+
+            // Toca o som (precisa de interação do usuário antes no Chrome/Safari)
+            playSound() {
+                const audio = document.getElementById('notification-sound');
+                if (audio) {
+                    audio.volume = 0.5;
+                    audio.play().catch(e => console.log("Áudio bloqueado pelo navegador até interação do usuário."));
+                }
+            },
+
+            send(title, body) {
+                if (this.permission) {
+                    this.playSound();
+                    // Cria a notificação do navegador
+                    new Notification(title, {
+                        body: body,
+                        icon: 'favicon.png', // Usa seu ícone
+                        vibrate: [200, 100, 200] // Vibra no Android
+                    });
+                } else {
+                    // Fallback: Se não tiver permissão, usa alerta nativo
+                    alert(`🔔 ${title}\n\n${body}`);
+                }
+            },
+
+            checkDailyTasks() {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // 1. Filtra tarefas de HOJE que NÃO estão feitas
+                let todaysTasks = DB.state.tasks.filter(t => t.date === today && !t.done);
+
+                if (todaysTasks.length === 0) return;
+
+                // 2. Ordena por Urgência (HIGH > MED > LOW)
+                const priorityWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
+                
+                todaysTasks.sort((a, b) => {
+                    // Se as prioridades forem diferentes, ordena pela prioridade
+                    if (priorityWeight[b.prio] !== priorityWeight[a.prio]) {
+                        return priorityWeight[b.prio] - priorityWeight[a.prio];
+                    }
+                    // Se forem iguais, mantém a ordem de criação
+                    return 0;
+                });
+
+                // 3. Monta a Mensagem
+                const total = todaysTasks.length;
+                const mostUrgent = todaysTasks[0];
+                
+                const title = `Modo Caverna: ${total} Tarefas para Hoje!`;
+                const body = `Prioridade Máxima: ${mostUrgent.desc} [${mostUrgent.prio}]\nFoco total, Engenheiro.`;
+
+                this.send(title, body);
+            }
+        };
+
         // --- 1. STATE MANAGEMENT ---
         const DB = {
             key: 'caverna_os_v6',
@@ -768,6 +846,14 @@
                 this.updateGreeting();
                 FinanceModule.init();
                 this.refreshAll();
+                
+                // Inicia sistema de notificação
+                NotificationModule.init();
+
+                // Loop de verificação: Roda a cada 60 segundos (60000ms)
+                setInterval(() => {
+                    NotificationModule.checkAlarms();
+                }, 60000);
             },
 
             updateGreeting() {
@@ -1027,54 +1113,74 @@
             }
         };
 
-        // --- 4. TASK MODULE ---
+        // --- 4. TASK MODULE (COM HORA) ---
         const TaskModule = {
             add() {
                 const desc = document.getElementById('task-input').value;
                 const date = document.getElementById('task-date').value;
+                const time = document.getElementById('task-time').value; // Captura a Hora
                 const prio = document.getElementById('task-prio').value;
-                const freq = document.getElementById('task-freq').value; // Pega a frequencia
+                const freq = document.getElementById('task-freq').value;
 
                 if (desc) {
                     DB.state.tasks.push({ 
                         desc, 
                         date, 
+                        time, // Salva a Hora
                         prio, 
-                        freq, // Salva a frequencia
+                        freq, 
                         done: false 
                     });
                     document.getElementById('task-input').value = '';
+                    // Não limpamos data/hora para facilitar inserção em sequência
                     DB.save();
                 }
             },
+            
             toggle(index) {
                 DB.state.tasks[index].done = !DB.state.tasks[index].done;
                 DB.save();
             },
+            
             delete(index) {
                 DB.state.tasks.splice(index, 1);
                 DB.save();
             },
+            
             render() {
                 const list = document.getElementById('task-list-container');
                 const filter = document.getElementById('task-view-filter').value;
                 
                 list.innerHTML = '';
                 
-                DB.state.tasks.forEach((t, i) => {
-                    // Lógica de Filtro
-                    // Se o filtro não for 'all' e a frequencia da tarefa for diferente do filtro, esconde.
-                    // (Tarefas antigas sem freq são tratadas como 'Geral')
+                // Ordenação inteligente: Primeiro por Prioridade, depois por Hora
+                const sortedTasks = [...DB.state.tasks].sort((a, b) => {
+                    const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
+                    if (pWeight[b.prio] !== pWeight[a.prio]) return pWeight[b.prio] - pWeight[a.prio];
+                    // Se prioridade for igual, quem tem hora marcada vem antes
+                    if (a.time && !b.time) return -1;
+                    if (!a.time && b.time) return 1;
+                    if (a.time && b.time) return a.time.localeCompare(b.time);
+                    return 0;
+                });
+
+                sortedTasks.forEach((t) => {
+                    // Precisamos encontrar o índice original para o toggle/delete funcionar na lista ordenada
+                    const originalIndex = DB.state.tasks.indexOf(t);
+                    
                     const tarefaFreq = t.freq || 'Geral';
                     if (filter !== 'all' && tarefaFreq !== filter) return;
 
                     const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                     const doneStyle = t.done ? 'text-decoration: line-through; opacity: 0.5;' : '';
                     const icon = t.done ? 'fa-check-square' : 'fa-square';
+                    
+                    // Formatação da Hora (Se existir)
+                    const timeDisplay = t.time ? `<i class="far fa-clock" style="margin-left:5px; font-size:0.7rem;"></i> ${t.time}` : '';
 
                     list.innerHTML += `
                         <div class="task-item fade-in">
-                            <div style="display:flex; align-items:center; cursor:pointer; width:100%;" onclick="TaskModule.toggle(${i})">
+                            <div style="display:flex; align-items:center; cursor:pointer; width:100%;" onclick="TaskModule.toggle(${originalIndex})">
                                 <i class="far ${icon}" style="margin-right:10px; color:var(--color-primary)"></i>
                                 <div style="flex:1;">
                                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
@@ -1084,23 +1190,21 @@
                                     <span style="${doneStyle}; display:block;">${t.desc}</span>
                                 </div>
                             </div>
-                            <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px; min-width:60px;">
                                 <small class="mono" style="color:#666; font-size:0.7rem; white-space:nowrap;">${t.date}</small>
-                                <button onclick="TaskModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                                <small class="mono" style="color:var(--color-primary); font-size:0.75rem; white-space:nowrap; font-weight:bold;">${timeDisplay}</small>
+                                <button onclick="TaskModule.delete(${originalIndex})" style="background:none; border:none; color:#444; cursor:pointer; margin-top:5px;"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     `;
                 });
 
-                // --- SUBSTITUA O FINAL DO RENDER POR ISSO: ---
-                // Se a lista estiver vazia (ou após filtro), mostra o padrão
                 if(list.innerHTML === '') {
-                    // Adiciona altura 100% ao container para o flex funcionar
                     list.style.flex = '1';
                     list.style.display = 'flex'; 
                     list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
                 } else {
-                    list.style.display = 'block'; // Reseta display se tiver itens
+                    list.style.display = 'block';
                 }
             }
         };
