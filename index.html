@@ -637,55 +637,59 @@
         /* =========================================
            RESPONSIVIDADE (CELULAR) - BLOCO COMPLETO CORRIGIDO
            ========================================= */
+        /* --- Substitua TODO o bloco @media (max-width: 768px) por este --- */
         @media (max-width: 768px) {
             .sidebar { display: none; }
+            .mobile-nav { display: flex; }
             
-            /* Ajuste da Barra de Navegação (menos altura) */
-            .mobile-nav { 
-                display: flex; 
-                padding: 10px 20px 18px 20px; /* Reduzi o bottom de 30px para 18px */
+            /* 1. SAUDAÇÃO: Ajustei de 5rem para 3rem (sobe o texto) */
+            .main-content { 
+                padding: 3rem 1rem 7rem 1rem; 
             }
             
-            /* Ajuste da Saudação (mais espaço no topo) */
-            .main-content { 
-                padding: 5rem 1rem 7rem 1rem; 
+            /* 2. MENU INFERIOR: Reduzi o padding-bottom para 5px (abaixa a barra) */
+            .mobile-nav {
+                padding: 10px 20px 5px 20px; 
             }
             
             .header-title-group h1 { font-size: 1.6rem; }
             
-            /* Grid vira Coluna Única */
             .grid-container { display: flex; flex-direction: column; gap: 1.5rem; }
             .col-4, .col-6, .col-8, .col-12 { width: 100%; }
-            
             .card { padding: 1.2rem; }
             
-            /* Ajuste dos ITENS da lista de tarefas/hábitos */
-            .task-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .task-item > div { width: 100%; justify-content: space-between; }
-
-            /* --- CORREÇÃO DOS INPUTS DE TAREFAS (PARA NÃO CORTAR) --- */
-            
-            /* Força a área de input a ficar um embaixo do outro no celular */
+            /* 3. CORREÇÃO DOS INPUTS DE TAREFAS */
+            /* Força o container principal a empilhar */
             #tarefas .card-header + div {
                 flex-direction: column !important;
                 align-items: stretch !important;
             }
             
-            /* Faz cada input ocupar 100% da largura */
-            #tarefas .card-header + div > * {
+            /* Garante que Input Texto, Select e Botão ocupem 100% */
+            #task-input, #task-prio, #tarefas .btn-primary {
                 width: 100% !important;
-                flex: none !important;
                 margin-bottom: 10px !important;
+                flex: none !important;
+            }
+
+            /* CORREÇÃO ESPECÍFICA DA DATA */
+            /* Estica a div que segura o input data + botão calendário */
+            #tarefas .card-header + div > div {
+                width: 100% !important;
+                display: flex !important;
+                margin-bottom: 10px;
             }
             
-            /* Esconde o botão de calendário extra no mobile (o input nativo já resolve) */
+            /* Faz o input de data crescer para preencher o espaço */
+            #task-date {
+                width: 100% !important;
+                flex: 1 !important; 
+            }
+            
+            /* Mantém o botão de calendário visível e alinhado */
             #tarefas .btn-calendar {
-                display: none !important;
-            }
-            
-            /* Tira a margem do botão Push */
-            #tarefas button.btn-primary {
-                margin-bottom: 0 !important;
+                width: 45px !important;
+                flex: none;
             }
         }
 
@@ -787,8 +791,7 @@
 
         <div id="dashboard" class="view-section fade-in">
             <div class="grid-container">
-                
-                <div class="card col-12 mobile-only">
+                <div class="card col-12">
                     <div class="card-header">
                         <span class="card-title">
                             <i class="fab fa-youtube" style="color: #ff0000; margin-right: 8px;"></i> 
@@ -850,13 +853,11 @@
 
         <div id="financeiro" class="view-section hidden fade-in">
             <div class="grid-container">
-                
                 <div class="card col-6">
                     <div class="card-header">
                         <span class="card-title">Contas Vinculadas</span>
                         <button class="card-action-btn" onclick="UI.toggle('bank-add-form')">+ Nova Conta</button>
                     </div>
-
                     <div id="bank-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
                         <select id="bank-select" class="form-control">
                             <option value="Nubank">Nubank</option>
@@ -867,7 +868,6 @@
                         <input type="number" id="bank-balance-init" class="form-control" placeholder="Saldo Inicial (R$)">
                         <button class="btn-primary" onclick="FinanceModule.addAccount()">Salvar</button>
                     </div>
-
                     <div id="bank-list-container"></div>
                 </div>
 
@@ -875,74 +875,62 @@
                     <div class="card-header">
                         <span class="card-title">Registro de Operações</span>
                     </div>
-
                     <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-                        
                         <label style="font-size: 0.8rem; color: #888;">Data da Transação:</label>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="date" id="trans-date" class="form-control" style="margin-bottom: 0;">
-                            <button class="btn-calendar" onclick="UI.openCalendar('trans-date')" title="Abrir Calendário">
-                                <i class="fas fa-calendar-alt"></i>
-                            </button>
-                        </div>
-                        
+                        <input type="date" id="trans-date" class="form-control" style="margin-bottom: 10px;">
                         <input type="text" id="trans-desc" class="form-control" placeholder="Descrição (ex: Almoço, Freelance)">
-                        
                         <div class="btn-group" style="margin-bottom: 10px;">
                             <input type="number" id="trans-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom: 0;">
                             <select id="trans-account-select" class="form-control" style="margin-bottom: 0;">
                                 <option value="" disabled selected>Selecione a Conta</option>
                             </select>
                         </div>
-                        
                         <div class="btn-group" style="gap: 10px; width: 100%;">
-                            <button class="btn-danger" onclick="FinanceModule.addTransaction('expense')">
-                                <i class="fas fa-arrow-down"></i> Saída
-                            </button>
-                            <button class="btn-success" onclick="FinanceModule.addTransaction('income')">
-                                <i class="fas fa-arrow-up"></i> Entrada
-                            </button>
+                            <button class="btn-danger" onclick="FinanceModule.addTransaction('expense')"><i class="fas fa-arrow-down"></i> Saída</button>
+                            <button class="btn-success" onclick="FinanceModule.addTransaction('income')"><i class="fas fa-arrow-up"></i> Entrada</button>
                         </div>
                     </div>
-
                     <div class="card-header" style="margin-bottom: 10px;">
                         <span class="card-title">Histórico Recente</span>
                     </div>
                     <div id="transaction-log" class="transaction-list"></div>
                 </div>
-
             </div>
         </div>
 
         <div id="tarefas" class="view-section hidden fade-in">
-            <div class="card" style="max-width: 800px; margin: 0 auto;">
-                <div class="card-header">
+            <div class="card" style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <div class="card-header" style="justify-content: space-between;">
                     <span class="card-title">Backlog de Execução</span>
+                    <select id="task-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="TaskModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="Diário">Diários</option>
+                        <option value="Semanal">Semanais</option>
+                        <option value="Mensal">Mensais</option>
+                    </select>
                 </div>
-                
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
                     <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
-                    
-                    <div style="display: flex; gap: 5px;">
-                        <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; width: 130px;">
-                        <button class="btn-calendar" onclick="UI.openCalendar('task-date')"><i class="fas fa-calendar-alt"></i></button>
-                    </div>
-                    
+                    <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; width: 130px;">
+                    <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
+                        <option value="Geral">Geral</option>
+                        <option value="Diário">Diário</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
                     <select id="task-prio" class="form-control" style="margin-bottom: 0; width: 100px;">
                         <option value="HIGH">Alta</option>
                         <option value="MED">Média</option>
                         <option value="LOW">Baixa</option>
                     </select>
-                    <button class="btn-primary btn-action-padrao" onclick="TaskModule.add()">Adicionar</button>
+                    <button class="btn-primary" style="width: auto;" onclick="TaskModule.add()">Push</button>
                 </div>
-
                 <div id="task-list-container"></div>
             </div>
         </div>
 
         <div id="habitos" class="view-section hidden fade-in">
-            <div class="card" style="max-width: 800px; margin: 0 auto;">
+            <div class="card" style="width: 100%; max-width: 800px; margin: 0 auto;">
                 <div class="card-header" style="justify-content: space-between;">
                     <span class="card-title">Protocolo</span>
                     <select id="habit-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="HabitModule.render()">
@@ -952,19 +940,15 @@
                         <option value="Mensal">Mensais</option>
                     </select>
                 </div>
-
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                     <input type="text" id="habit-input" class="form-control" placeholder="Novo hábito..." style="margin-bottom: 0; flex: 2; min-width: 200px;">
-                    
                     <select id="habit-freq" class="form-control" style="margin-bottom: 0; width: 120px;">
                         <option value="Diário">Diário</option>
                         <option value="Semanal">Semanal</option>
                         <option value="Mensal">Mensal</option>
                     </select>
-
                     <button class="btn-primary btn-action-padrao" onclick="HabitModule.add()">Adicionar</button>
                 </div>
-                
                 <div id="habit-list-container" class="habit-grid-container"></div>
             </div>
         </div>
@@ -980,28 +964,22 @@
                         <option value="Mensal">Meta Mensal</option>
                     </select>
                 </div>
-
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                     <input type="text" id="book-input" class="form-control" placeholder="Título..." style="margin-bottom: 0; flex: 2; min-width: 200px;">
-                    
                     <select id="book-type" class="form-control" style="width: 100px; margin-bottom: 0;">
                         <option value="book">Livro</option>
                         <option value="course">Curso</option>
                     </select>
-
                     <select id="book-freq" class="form-control" style="width: 110px; margin-bottom: 0;">
                         <option value="Diário">Diário</option>
                         <option value="Semanal">Semanal</option>
                         <option value="Mensal">Mensal</option>
                     </select>
-
                     <button class="btn-primary btn-action-padrao" onclick="LibraryModule.add()">Adicionar</button>
                 </div>
-                
                 <div id="library-list-container"></div>
             </div>
         </div>
-
     </main>
 
     <nav class="mobile-nav">
@@ -1302,9 +1280,16 @@
                 const desc = document.getElementById('task-input').value;
                 const date = document.getElementById('task-date').value;
                 const prio = document.getElementById('task-prio').value;
+                const freq = document.getElementById('task-freq').value; // Pega a frequencia
 
                 if (desc) {
-                    DB.state.tasks.push({ desc, date, prio, done: false });
+                    DB.state.tasks.push({ 
+                        desc, 
+                        date, 
+                        prio, 
+                        freq, // Salva a frequencia
+                        done: false 
+                    });
                     document.getElementById('task-input').value = '';
                     DB.save();
                 }
@@ -1319,29 +1304,44 @@
             },
             render() {
                 const list = document.getElementById('task-list-container');
+                const filter = document.getElementById('task-view-filter').value; // Pega o filtro atual
+                
                 list.innerHTML = '';
                 
                 DB.state.tasks.forEach((t, i) => {
+                    // Lógica de Filtro
+                    // Se o filtro não for 'all' e a frequencia da tarefa for diferente do filtro, esconde.
+                    // (Tarefas antigas sem freq são tratadas como 'Geral')
+                    const tarefaFreq = t.freq || 'Geral';
+                    if (filter !== 'all' && tarefaFreq !== filter) return;
+
                     const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                     const doneStyle = t.done ? 'text-decoration: line-through; opacity: 0.5;' : '';
                     const icon = t.done ? 'fa-check-square' : 'fa-square';
 
                     list.innerHTML += `
-                        <div class="task-item">
-                            <div style="display:flex; align-items:center; cursor:pointer;" onclick="TaskModule.toggle(${i})">
+                        <div class="task-item fade-in">
+                            <div style="display:flex; align-items:center; cursor:pointer; width:100%;" onclick="TaskModule.toggle(${i})">
                                 <i class="far ${icon}" style="margin-right:10px; color:var(--color-primary)"></i>
-                                <div>
-                                    <span class="priority-badge mono ${prioClass}">${t.prio}</span>
-                                    <span style="${doneStyle}">${t.desc}</span>
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                        <span class="priority-badge mono ${prioClass}">${t.prio}</span>
+                                        <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${tarefaFreq}</span>
+                                    </div>
+                                    <span style="${doneStyle}; display:block;">${t.desc}</span>
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <small class="mono" style="color:#666; font-size:0.7rem;">${t.date}</small>
+                                <small class="mono" style="color:#666; font-size:0.7rem; white-space:nowrap;">${t.date}</small>
                                 <button onclick="TaskModule.delete(${i})" style="background:none; border:none; color:#444; cursor:pointer;"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     `;
                 });
+
+                if(list.innerHTML === '') {
+                    list.innerHTML = '<p style="color:#666; text-align:center; padding:10px;">Nenhuma tarefa encontrada.</p>';
+                }
             }
         };
 
@@ -1489,27 +1489,35 @@
             }
         }; // <--- Esta chave fecha o LibraryModule
 
-        
-        // --- 8. CHARTS MODULE (Chart.js) ---
+        // --- 8. CHARTS MODULE (OTIMIZADO) ---
         const ChartsModule = {
             instances: {},
             
             renderAll() {
-                this.renderRadar();
-                this.renderDist();
-                this.renderFlow();
+                // Pequeno delay apenas para garantir que o elemento HTML existe
+                setTimeout(() => {
+                    this.renderRadar();
+                    this.renderDist();
+                    this.renderFlow();
+                }, 50);
+            },
+
+            // Configuração padrão para desligar animações e acelerar
+            commonOptions: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false, // <--- O SEGREDO DA VELOCIDADE
+                plugins: { legend: { display: false } }
             },
 
             renderRadar() {
                 const ctx = document.getElementById('radarChart');
                 if (!ctx) return;
                 
-                // Calculate scores
                 const tasksTotal = DB.state.tasks.length || 1;
                 const tasksDone = DB.state.tasks.filter(t => t.done).length;
                 const taskScore = (tasksDone / tasksTotal) * 100;
                 
-                // Static/Mock scores for demo purposes on specific dimensions
                 const data = {
                     labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'],
                     datasets: [{
@@ -1528,8 +1536,7 @@
                     type: 'radar',
                     data: data,
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        ...this.commonOptions,
                         scales: {
                             r: {
                                 grid: { color: 'rgba(255,255,255,0.1)' },
@@ -1537,8 +1544,7 @@
                                 ticks: { display: false, backdropColor: 'transparent' },
                                 pointLabels: { color: '#888', font: { size: 10 } }
                             }
-                        },
-                        plugins: { legend: { display: false } }
+                        }
                     }
                 });
             },
@@ -1549,12 +1555,11 @@
 
                 const labels = DB.state.banks.map(b => b.name);
                 const values = DB.state.banks.map(b => b.balance);
-                // Colors mapping
                 const colors = labels.map(n => {
                     if(n === 'Nubank') return '#820ad1';
                     if(n === 'Inter') return '#ff7a00';
                     if(n === 'Banco do Brasil') return '#fce300';
-                    return '#005ca9'; // Caixa fallback
+                    return '#005ca9';
                 });
 
                 if (this.instances.dist) this.instances.dist.destroy();
@@ -1563,14 +1568,13 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            data: values.length ? values : [1], // Placeholder
+                            data: values.length ? values : [1],
                             backgroundColor: values.length ? colors : ['#333'],
                             borderWidth: 0
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        ...this.commonOptions,
                         cutout: '70%',
                         plugins: { legend: { position: 'right', labels: { color: '#888', boxWidth: 10 } } }
                     }
@@ -1601,9 +1605,7 @@
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        ...this.commonOptions,
                         scales: {
                             y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } },
                             x: { grid: { display: false }, ticks: { color: '#fff' } }
