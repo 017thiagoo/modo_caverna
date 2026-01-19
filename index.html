@@ -464,9 +464,9 @@
                 <h1 class="mono" id="greeting-text">Inicializando Sistema...</h1>
                 <p class="header-subtitle mono">> Usuário: Engenheiro | Nível de Acesso: Root</p>
             </div>
-            <div class="system-status mono" onclick="NotificationModule.test()" style="cursor: pointer;">
+            <div class="system-status mono">
                 <div class="status-dot"></div>
-                SYSTEM ONLINE v7.0 (Toque p/ Testar Som)
+                SYSTEM ONLINE v7.0
             </div>
         </header>
 
@@ -745,68 +745,85 @@
 
             async init() {
                 if ("Notification" in window) {
+                    // Se já tem permissão, apenas marca como true
+                    if (Notification.permission === 'granted') {
+                        this.permission = true;
+                        return;
+                    }
+                    // Se não tem, pede (requer clique do usuário)
                     const result = await Notification.requestPermission();
                     this.permission = result === 'granted';
                     
-                    // Faz a primeira verificação ao iniciar
                     if (this.permission) {
-                        this.checkDailyTasks();
+                        this.send("Sistema Ativado", "As notificações estão funcionando.");
                     }
                 }
             },
 
-            // Toca o som (precisa de interação do usuário antes no Chrome/Safari)
+            // Função para você testar manualmente se o som sai
+            test() {
+                this.playSound();
+                alert("Teste de som executado. Se não ouviu, verifique o volume.");
+                this.init(); // Aproveita para pedir permissão se não tiver
+            },
+
             playSound() {
                 const audio = document.getElementById('notification-sound');
                 if (audio) {
-                    audio.volume = 0.5;
-                    audio.play().catch(e => console.log("Áudio bloqueado pelo navegador até interação do usuário."));
+                    audio.volume = 1.0; // Volume máximo
+                    // Tenta tocar. Se der erro, é porque o navegador bloqueou
+                    audio.play().catch(e => console.warn("Som bloqueado. Interaja com a página.", e));
                 }
             },
 
             send(title, body) {
+                // Toca o som sempre (mesmo se a notificação visual falhar)
+                this.playSound();
+
                 if (this.permission) {
-                    this.playSound();
-                    // Cria a notificação do navegador
-                    new Notification(title, {
-                        body: body,
-                        icon: 'favicon.png', // Usa seu ícone
-                        vibrate: [200, 100, 200] // Vibra no Android
-                    });
+                    // Notificação Visual do Sistema (Windows/Android/iOS)
+                    try {
+                        new Notification(title, {
+                            body: body,
+                            icon: 'favicon.png',
+                            vibrate: [200, 100, 200], // Vibração
+                            requireInteraction: true // Mantém na tela até clicar (Desktop)
+                        });
+                    } catch (e) {
+                        console.log("Erro na notificação nativa");
+                    }
                 } else {
-                    // Fallback: Se não tiver permissão, usa alerta nativo
-                    alert(`🔔 ${title}\n\n${body}`);
+                    // Fallback: Se não permitiu notificação, usa um Alert antigo mas funcional
+                    // Mas usamos setTimeout para não travar o script
+                    setTimeout(() => alert(`⏰ ALARME: ${title}\n${body}`), 100);
                 }
             },
 
-            checkDailyTasks() {
-                const today = new Date().toISOString().split('T')[0];
+            checkAlarms() {
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
                 
-                // 1. Filtra tarefas de HOJE que NÃO estão feitas
-                let todaysTasks = DB.state.tasks.filter(t => t.date === today && !t.done);
+                const currentHour = String(now.getHours()).padStart(2, '0');
+                const currentMin = String(now.getMinutes()).padStart(2, '0');
+                const currentTime = `${currentHour}:${currentMin}`;
 
-                if (todaysTasks.length === 0) return;
+                // Procura tarefa: Data igual, Hora igual e NÃO feita
+                // Usamos um flag 'notified' para não tocar 10x no mesmo minuto
+                const alarmTask = DB.state.tasks.find(t => 
+                    t.date === today && 
+                    t.time === currentTime && 
+                    !t.done &&
+                    !t.notified // Evita repetição no mesmo minuto
+                );
 
-                // 2. Ordena por Urgência (HIGH > MED > LOW)
-                const priorityWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
-                
-                todaysTasks.sort((a, b) => {
-                    // Se as prioridades forem diferentes, ordena pela prioridade
-                    if (priorityWeight[b.prio] !== priorityWeight[a.prio]) {
-                        return priorityWeight[b.prio] - priorityWeight[a.prio];
-                    }
-                    // Se forem iguais, mantém a ordem de criação
-                    return 0;
-                });
-
-                // 3. Monta a Mensagem
-                const total = todaysTasks.length;
-                const mostUrgent = todaysTasks[0];
-                
-                const title = `Modo Caverna: ${total} Tarefas para Hoje!`;
-                const body = `Prioridade Máxima: ${mostUrgent.desc} [${mostUrgent.prio}]\nFoco total, Engenheiro.`;
-
-                this.send(title, body);
+                if (alarmTask) {
+                    this.send(
+                        `HORA DE EXECUTAR!`,
+                        `Tarefa: ${alarmTask.desc}\nPrioridade: ${alarmTask.prio}`
+                    );
+                    // Marca como notificado na memória (não no banco) para não repetir agora
+                    alarmTask.notified = true; 
+                }
             }
         };
 
@@ -837,14 +854,22 @@
                 this.updateGreeting();
                 FinanceModule.init();
                 this.refreshAll();
-                
-                // Inicia sistema de notificação
-                NotificationModule.init();
 
-                // Loop de verificação: Roda a cada 60 segundos (60000ms)
+                // TRUQUE DO PRIMEIRO CLIQUE:
+                // O navegador só libera som se você clicar na página.
+                // Adicionamos um "ouvinte" no corpo inteiro do site.
+                // No seu primeiro toque em qualquer lugar, ele ativa o som e pede permissão.
+                document.body.addEventListener('click', async () => {
+                    await NotificationModule.init();
+                    // Toca um som mudo ou baixinho só para "destravar" o áudio do navegador
+                    const audio = document.getElementById('notification-sound');
+                    if(audio) { audio.volume = 0.1; audio.play().catch(()=>{}); }
+                }, { once: true }); // "once: true" significa que só roda na primeira vez
+
+                // Loop de verificação: A cada 5 SEGUNDOS (muito mais preciso)
                 setInterval(() => {
                     NotificationModule.checkAlarms();
-                }, 60000);
+                }, 5000);
             },
 
             updateGreeting() {
