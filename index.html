@@ -329,16 +329,8 @@
             
             .date-time-wrapper input {
                 width: auto !important; 
-                flex: 1 !important; /* Divide o espaço igualmente */
+                flex: 1 !important; /* Faz dividir o espaço igualmente */
                 margin-bottom: 0 !important;
-                
-                /* AJUSTES DE PROPORÇÃO (AUMENTO) */
-                height: 55px !important; /* Mais alto que o padrão (era 45px) */
-                font-size: 16px !important; /* Fonte maior para ler fácil */
-                padding: 0 5px !important; /* Menos padding lateral para caber o texto */
-                background: #151515 !important; /* Um fundo levemente mais claro para destacar */
-                border: 1px solid #333 !important;
-                border-radius: 8px !important;
             }
 
             /* 5. ESTILO GERAL DOS CAMPOS */
@@ -407,35 +399,43 @@
         }
 
         /* =========================================
-        AJUSTES FINAIS DE TAMANHO (TOUCH)
+        AJUSTES VISUAIS FINAIS (EQUILIBRADOS)
         ========================================= */
 
-        /* 1. Aumentar as bolinhas dos Hábitos */
-        .day-check {
-            width: 36px;  /* Aumentado de 24px para 36px */
-            height: 36px;
-            border-radius: 8px;
-            border-width: 2px; /* Borda mais grossa para ver melhor */
+        /* 1. AUMENTAR Data e Hora dentro da tarefa salva */
+        .task-item small {
+            font-size: 0.85rem !important; /* Aumentei (era 0.7rem) */
+            font-weight: 500;
+            display: block; /* Garante que fiquem organizados */
+            margin-bottom: 2px;
         }
 
-        /* 2. Aumentar o "Check" (Quadrado) das Tarefas e (Bolinha) da Biblioteca */
+        /* 2. Bolinhas dos Hábitos (Reduzido levemente) */
+        .day-check {
+            width: 30px; /* De 36px para 30px (Tamanho ideal p/ dedo) */
+            height: 30px;
+            border-radius: 8px;
+            border-width: 1px;
+        }
+
+        /* 3. "Check" (Quadrado/Bolinha) das Tarefas e Biblioteca (Reduzido) */
         .task-item i.fa-square, 
         .task-item i.fa-check-square,
         .task-item i.fa-circle, 
         .task-item i.fa-check-circle {
-            font-size: 1.8rem !important; /* Bem maior */
-            margin-right: 15px !important;
-            padding: 5px; /* Aumenta a área de toque do dedo */
+            font-size: 1.4rem !important; /* De 1.8rem para 1.4rem */
+            margin-right: 12px !important;
+            padding: 2px;
         }
 
-        /* 3. Aumentar Lixeira e Calendário */
+        /* 4. Botões de Ação: Lixeira e Calendário (Reduzido) */
         .task-item button {
-            padding: 10px 12px !important; /* Área de toque generosa */
+            padding: 5px 8px !important; /* Diminuí o espaçamento */
             margin-top: 2px !important;
         }
 
         .task-item button i {
-            font-size: 1.4rem !important; /* Ícone grande e visível */
+            font-size: 1.1rem !important; /* De 1.4rem para 1.1rem */
         }
 
     </style>
