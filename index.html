@@ -288,16 +288,19 @@
 
         /* --- SUBSTITUA O BLOCO @MEDIA (MOBILE) POR ESTE --- */
         @media (max-width: 768px) {
-            /* 1. Layout Base */
+            /* 1. Esconde coisas de PC */
             .sidebar, .youtube-widget { display: none !important; }
             .mobile-nav { display: flex; }
             .mobile-only { display: block !important; }
 
-            /* 2. Saudação e Scroll */
+            /* 2. LAYOUT E SCROLL */
             .main-content { 
-                height: 100dvh;
-                overflow-y: auto;
-                padding: 0rem 1rem 8rem 1rem !important; /* Seu ajuste de altura preferido */
+                height: 100dvh; /* Altura total da tela */
+                overflow-y: auto; /* Rolagem interna */
+                padding-top: 3.5rem !important; /* Espaço seguro para a saudação */
+                padding-left: 1rem;
+                padding-right: 1rem;
+                padding-bottom: 100px;
                 -webkit-overflow-scrolling: touch;
             }
             
@@ -305,28 +308,39 @@
             .grid-container { display: flex; flex-direction: column; gap: 1.5rem; }
             .col-4, .col-6, .col-8, .col-12 { width: 100%; }
             .card { padding: 1.2rem; }
-            .mobile-nav { padding: 10px 20px 10px 20px; height: auto; z-index: 9999; }
+            
+            /* Barra de Navegação */
+            .mobile-nav {
+                padding: 10px 20px calc(10px + env(safe-area-inset-bottom)) 20px;
+                height: auto;
+                z-index: 9999;
+            }
 
-            /* 3. Inputs em Coluna */
+            /* 3. INPUTS GERAIS */
             .input-group-row, #financeiro .input-group-row { 
                 flex-direction: column !important;
                 gap: 0 !important;
                 margin-bottom: 15px !important;
             }
 
-            /* 4. DATA E HORA LADO A LADO (NOVO) */
+            /* 4. CORREÇÃO DATA E HORA (Lado a Lado) */
             .date-time-wrapper {
-                flex-direction: row !important; /* Força linha */
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 10px !important;
+                width: 100% !important;
                 margin-bottom: 12px !important;
             }
+
+            /* Faz data e hora dividirem o espaço igualmente */
             .date-time-wrapper input {
-                margin-bottom: 0 !important; /* Remove margem interna */
-                width: 50% !important; /* Cada um ocupa metade */
+                width: auto !important; 
+                flex: 1 !important; 
+                margin-bottom: 0 !important;
             }
 
-            /* 5. Estilo Geral dos Campos */
-            .form-control, .btn-primary, 
-            input[type="date"], input[type="time"] { /* Adicionei time aqui */
+            /* 5. ESTILO DOS CAMPOS */
+            .form-control, .btn-primary {
                 width: 100% !important;
                 margin-bottom: 12px !important;
                 flex: none !important;
@@ -335,10 +349,15 @@
                 font-size: 0.9rem !important;
                 padding: 0 12px !important;
                 box-sizing: border-box !important;
-                -webkit-appearance: none; /* Reset iOS */
-                appearance: none;
             }
 
+            /* Reset iOS para Data/Hora */
+            input[type="date"], input[type="time"] {
+                -webkit-appearance: none;
+                appearance: none;
+                display: block;
+            }
+            
             /* Remove margem do último item */
             .input-group-row .form-control:last-child,
             .input-group-row .btn-primary { margin-bottom: 0 !important; }
@@ -619,9 +638,9 @@
     
                     <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
                     
-                    <div class="date-time-wrapper" style="display: flex; gap: 10px; width: 100%; flex: 1;">
-                        <input type="date" id="task-date" class="form-control" style="margin-bottom: 0;">
-                        <input type="time" id="task-time" class="form-control" style="margin-bottom: 0;">
+                    <div class="date-time-wrapper">
+                        <input type="date" id="task-date" class="form-control">
+                        <input type="time" id="task-time" class="form-control">
                     </div>
                     
                     <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
