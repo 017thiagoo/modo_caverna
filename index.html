@@ -829,6 +829,18 @@
             }
         };
 
+        /* --- ADICIONE ISTO LOGO APÓS O BLOCO "const DB" --- */
+        
+        const UI = {
+            toggle(elementId) {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    // Se tiver a classe 'hidden', tira. Se não tiver, coloca.
+                    el.classList.toggle('hidden');
+                }
+            }
+        };
+
         // --- 2. SYSTEM CONTROLLER ---
         const System = {
             init() {
