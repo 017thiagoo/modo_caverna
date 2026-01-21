@@ -715,6 +715,51 @@
                 <div class="card col-12">
                     <div class="card-header">
                         <span class="card-title">
+                            <i class="fas fa-hand-holding-usd" style="margin-right:8px; color:var(--color-success)"></i> 
+                            Receitas Fixas Mensais
+                        </span>
+                        <button class="card-action-btn" onclick="UI.toggle('inc-add-form')">+ Nova Receita</button>
+                    </div>
+
+                    <div id="inc-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
+                        <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
+                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição (ex: Salário)" style="margin-bottom:0; flex:2;">
+                            <input type="number" id="inc-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
+                        </div>
+                        <div class="input-group-row" style="display:flex; gap:10px; align-items: center;">
+                            <input type="date" id="inc-date" class="form-control" style="margin-bottom:0; flex: 1;">
+                            <button class="btn-primary" onclick="FixedIncomeModule.add()" style="width: auto; background: var(--color-success); margin-bottom: 0; flex: 1;">
+                                Salvar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">PREVISÃO</small>
+                                <div style="font-weight: 700; color: #fff;" id="inc-total">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">RECEBIDO</small>
+                                <div style="font-weight: 700; color: var(--color-success);" id="inc-received">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">FALTA</small>
+                                <div style="font-weight: 700; color: #888;" id="inc-remaining">R$ 0.00</div>
+                            </div>
+                        </div>
+                        <div style="width:100%; height:4px; background:#222; border-radius:2px; overflow:hidden;">
+                            <div id="inc-progress-bar" style="width:0%; height:100%; background:var(--color-success); transition:0.5s;"></div>
+                        </div>
+                    </div>
+
+                    <div id="inc-list-container" class="habit-grid-container"></div>
+                </div>
+
+                <div class="card col-12">
+                    <div class="card-header">
+                        <span class="card-title">
                             <i class="fas fa-file-invoice-dollar" style="margin-right:8px; color:var(--color-warning)"></i> 
                             Gastos Fixos Mensais
                         </span>
@@ -1209,7 +1254,7 @@
         }
     };
 
-    // --- MÓDULO DE ENTRADAS FIXAS (NOVO) ---
+    // --- 3.5 MÓDULO DE RECEITAS FIXAS (IGUAL GASTOS, MAS PARA ENTRADAS) ---
     const FixedIncomeModule = {
         add() {
             const name = document.getElementById('inc-name').value;
@@ -1234,16 +1279,15 @@
             const inc = DB.state.incomes.find(e => e.id === id);
             if (inc) {
                 if (!inc.received) {
-                    // LÓGICA DO FLUXO: ENTRA NA CAIXA
-                    const caixa = DB.state.banks.find(b => b.name.includes('Caixa')) || DB.state.banks[0];
+                    // Tenta achar a conta "Caixa", senão pega a primeira
+                    const caixa = DB.state.banks.find(b => b.name.toLowerCase().includes('caixa')) || DB.state.banks[0];
                     
-                    if(!caixa) return alert("Cadastre a conta 'Caixa' primeiro!");
+                    if(!caixa) return alert("Cadastre uma conta bancária primeiro!");
 
-                    if (confirm(`Confirmar recebimento de R$ ${inc.val.toFixed(2)} na conta ${caixa.name}?`)) {
+                    if (confirm(`Receber R$ ${inc.val.toFixed(2)} na conta ${caixa.name}?`)) {
                         inc.received = true;
-                        caixa.balance += inc.val; // Adiciona ao saldo
+                        caixa.balance += inc.val;
 
-                        // Histórico
                         const today = new Date();
                         const formattedDate = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
                         
@@ -1255,12 +1299,11 @@
                             type: 'income',
                             accName: caixa.name
                         });
-                        
                         DB.save();
-                        alert("Recebido com sucesso!");
+                        alert("Recebido!");
                     }
                 } else {
-                    if(confirm("Desmarcar recebimento? (O saldo NÃO será removido automaticamente).")) {
+                    if(confirm("Desmarcar como recebido? (Saldo não será alterado).")) {
                         inc.received = false;
                         DB.save();
                     }
@@ -1280,14 +1323,18 @@
             if (!list) return;
             list.innerHTML = '';
             
-            // Ordena por data (se tiver)
             const sorted = [...DB.state.incomes].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
+            let totalVal = 0, recVal = 0;
+
             sorted.forEach(e => {
-                const statusColor = e.received ? 'var(--color-success)' : '#888';
+                totalVal += e.val;
+                if(e.received) recVal += e.val;
+
+                const statusColor = e.received ? 'var(--color-success)' : '#666'; // Verde se recebeu, Cinza se não
                 const statusIcon = e.received ? 'fa-check-circle' : 'fa-circle';
                 const opacity = e.received ? '0.5' : '1';
-                const dateDisplay = e.date ? `Previsão: ${e.date.split('-').reverse().join('/')}` : 'Sem data';
+                const dateDisplay = e.date ? `Prev: ${e.date.split('-').reverse().join('/')}` : 'Sem data';
 
                 list.innerHTML += `
                     <div class="habit-card-mini fade-in" style="opacity: ${opacity}; border-left: 3px solid ${statusColor}; padding: 15px;">
@@ -1297,7 +1344,7 @@
                                 <div>
                                     <span style="font-weight:600; display:block;">${e.name}</span>
                                     <span style="color:var(--color-success); font-weight:bold;">+ R$ ${e.val.toFixed(2)}</span>
-                                    <small style="color:#666; display:block;">${dateDisplay} -> Caixa</small>
+                                    <small style="color:#888; display:block;">${dateDisplay}</small>
                                 </div>
                             </div>
                             <i class="fas fa-trash" onclick="FixedIncomeModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
@@ -1305,7 +1352,24 @@
                     </div>
                 `;
             });
-            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma entrada fixa.</div>';
+
+            // ATUALIZA RESUMO (IGUAL GASTOS)
+            const remaining = totalVal - recVal;
+            const percent = totalVal > 0 ? (recVal / totalVal) * 100 : 0;
+            
+            const elTotal = document.getElementById('inc-total');
+            const elRec = document.getElementById('inc-received');
+            const elRem = document.getElementById('inc-remaining');
+            const elBar = document.getElementById('inc-progress-bar');
+            
+            if (elTotal) {
+                elTotal.innerText = `R$ ${totalVal.toFixed(2)}`;
+                elRec.innerText = `R$ ${recVal.toFixed(2)}`;
+                elRem.innerText = `R$ ${remaining.toFixed(2)}`;
+                elBar.style.width = `${percent}%`;
+            }
+
+            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma entrada cadastrada.</div>';
         }
     };
 
@@ -1700,12 +1764,11 @@
         }
     };
 
-    // --- 8. CHARTS MODULE (ATUALIZADO) ---
+    // --- 8. CHARTS MODULE (ATUALIZADO: LETRAS MAIORES E HÁBITOS EM PIZZA) ---
     const ChartsModule = {
         instances: {},
         
         renderAll() {
-            // Adicionado renderHabitPerformance
             setTimeout(() => { 
                 this.renderRadar(); 
                 this.renderDist(); 
@@ -1721,8 +1784,7 @@
             plugins: { legend: { display: false } }
         },
 
-        // 1. AUMENTAR BOTÕES DO GRÁFICO DE ATIVOS
-        // SUBSTITUA APENAS A FUNÇÃO renderDist POR ESTA:
+        // 1. GRÁFICO DE ATIVOS (BANCOS) - LETRA E BOTÃO MAIORES
         renderDist() {
             const ctx = document.getElementById('distChart');
             if (!ctx) return;
@@ -1747,77 +1809,86 @@
                     cutout: '60%', 
                     plugins: { 
                         legend: { 
+                            display: true, // Garante que a legenda apareça
                             position: 'right', 
                             labels: { 
-                                color: '#ccc', 
-                                boxWidth: 20, /* Diminuí de 40 para 20 */
-                                padding: 15,  /* Ajustei o espaçamento */
-                                font: { size: 12 }
+                                color: '#eee', 
+                                boxWidth: 50,  // AUMENTADO (Era 20)
+                                padding: 25,   // AUMENTADO
+                                font: { 
+                                    size: 16,  // AUMENTADO (Letra maior)
+                                    weight: 'bold'
+                                }
+                            },
+                            onClick: (e, legendItem, legend) => {
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
+                                if (ci.isDatasetVisible(index)) {
+                                    ci.hide(index);
+                                    legendItem.hidden = true;
+                                } else {
+                                    ci.show(index);
+                                    legendItem.hidden = false;
+                                }
                             }
-                            /* Removi o onClick para o clique voltar a funcionar (riscar/ocultar) */
                         } 
                     } 
                 } 
             });
         },
 
-        // 2. NOVO GRÁFICO DE PERFORMANCE DE HÁBITOS
+        // 2. GRÁFICO DE HÁBITOS (AGORA EM PIZZA/ROSCA)
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart');
             if (!ctx) return;
 
-            // Calcula performance baseada nos checks da semana atual
             let totalChecks = 0;
             let totalPossible = 0;
 
             DB.state.habits.forEach(h => {
                 if(h.checks) {
-                    totalChecks += h.checks.filter(Boolean).length; // Conta 'true'
-                    totalPossible += 7; // 7 dias na semana
+                    totalChecks += h.checks.filter(Boolean).length;
+                    totalPossible += 7;
                 }
             });
 
-            // Evita divisão por zero
-            const percentage = totalPossible > 0 ? (totalChecks / totalPossible) * 100 : 0;
-            const missed = 100 - percentage;
+            // Se não tiver hábitos, mostra gráfico vazio
+            const dataValues = totalPossible > 0 ? [totalChecks, totalPossible - totalChecks] : [0, 1];
+            const bgColors = totalPossible > 0 ? ['#10b981', '#333'] : ['#333', '#333'];
+            const labels = ['Concluído', 'Pendente'];
 
             if (this.instances.habit) this.instances.habit.destroy();
 
             this.instances.habit = new Chart(ctx, {
-                type: 'bar',
+                type: 'doughnut', // IGUAL AO DE ATIVOS
                 data: {
-                    labels: ['Semana Atual'],
-                    datasets: [
-                        {
-                            label: 'Concluído',
-                            data: [percentage],
-                            backgroundColor: '#10b981', // Verde
-                            borderRadius: 4,
-                            barThickness: 20
-                        },
-                        {
-                            label: 'Pendente',
-                            data: [missed],
-                            backgroundColor: '#333',
-                            borderRadius: 4,
-                            barThickness: 20
-                        }
-                    ]
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: bgColors,
+                        borderWidth: 0
+                    }]
                 },
                 options: {
-                    indexAxis: 'y', // Barra Horizontal
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true, display: false, max: 100 },
-                        y: { stacked: true, display: false }
-                    },
+                    ...this.commonOptions,
+                    cutout: '70%',
                     plugins: {
-                        legend: { display: true, position: 'bottom', labels: { color: '#888' } },
+                        legend: { 
+                            display: true, 
+                            position: 'right', 
+                            labels: { 
+                                color: '#ccc', 
+                                boxWidth: 20, 
+                                font: { size: 12 } 
+                            } 
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.raw.toFixed(1) + '%';
+                                    const val = context.raw;
+                                    const total = context.chart._metasets[context.datasetIndex].total;
+                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                                    return ` ${context.label}: ${pct}`;
                                 }
                             }
                         }
@@ -1826,36 +1897,23 @@
             });
         },
 
-        // ... Mantenha renderRadar e renderFlow iguais ...
+        // ... (Mantenha renderRadar e renderFlow iguais ao anterior) ...
         renderRadar() {
             const ctx = document.getElementById('radarChart');
             if (!ctx) return;
             const tasksTotal = DB.state.tasks.length || 1;
             const tasksDone = DB.state.tasks.filter(t => t.done).length;
             const taskScore = (tasksDone / tasksTotal) * 100;
-            
-            // Simulação simples de score para hábitos (baseado na semana)
-            let habitScore = 0;
-            let hCount = 0;
-            DB.state.habits.forEach(h => {
-                 if(h.checks) {
-                     habitScore += (h.checks.filter(Boolean).length / 7) * 100;
-                     hCount++;
-                 }
-            });
-            const finalHabitScore = hCount > 0 ? habitScore / hCount : 0;
-
             const data = {
                 labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'],
                 datasets: [{
-                    label: 'Nível', data: [taskScore, finalHabitScore, 85, 70, 90],
+                    label: 'Nível', data: [taskScore, 60, 85, 70, 90],
                     backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1
                 }]
             };
             if (this.instances.radar) this.instances.radar.destroy();
             this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         },
-
         renderFlow() {
             const ctx = document.getElementById('flowChart');
             if (!ctx) return;
