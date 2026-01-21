@@ -676,24 +676,23 @@
                         <button class="card-action-btn" onclick="UI.toggle('fixed-add-form')">+ Nova Conta</button>
                     </div>
 
-                    <div id="fixed-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
-                        <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="fixed-name" class="form-control" placeholder="Nome (ex: Internet)" style="margin-bottom:0;">
-                            <input type="number" id="fixed-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">TOTAL MENSAL</small>
+                                <div style="font-weight: 700; color: #fff;" id="fixed-total">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">JÁ PAGO</small>
+                                <div style="font-weight: 700; color: var(--color-success);" id="fixed-paid">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">FALTA PAGAR</small>
+                                <div style="font-weight: 700; color: var(--color-danger);" id="fixed-remaining">R$ 0.00</div>
+                            </div>
                         </div>
-                        <div class="date-time-wrapper" style="margin-bottom: 10px;">
-                            <input type="date" id="fixed-date" class="form-control">
-                            <input type="time" id="fixed-time" class="form-control">
-                        </div>
-                        <button class="btn-primary" onclick="FixedExpensesModule.add()" style="width: 100%;">Salvar Conta</button>
-                    </div>
-
-                    <div style="margin-bottom: 15px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:5px; color:#888;">
-                            <span>Progresso de Pagamentos</span>
-                            <span id="fixed-progress-text">0%</span>
-                        </div>
-                        <div style="width:100%; height:6px; background:#222; border-radius:3px; overflow:hidden;">
+                        
+                        <div style="width:100%; height:4px; background:#222; border-radius:2px; overflow:hidden;">
                             <div id="fixed-progress-bar" style="width:0%; height:100%; background:var(--color-success); transition:0.5s;"></div>
                         </div>
                     </div>
@@ -1142,7 +1141,7 @@
         }
     };
 
-    // --- 4. FIXED EXPENSES MODULE (NOVO) ---
+    // --- 4. FIXED EXPENSES MODULE (TURBINADO) ---
     const FixedExpensesModule = {
         add() {
             const name = document.getElementById('fixed-name').value;
@@ -1167,13 +1166,42 @@
         toggle(id) {
             const expense = DB.state.fixed.find(e => e.id === id);
             if (expense) {
-                expense.paid = !expense.paid;
-                DB.save();
+                // Se estava NÃO PAGO e agora vai virar PAGO
+                if (!expense.paid) {
+                    if (confirm(`Confirmar pagamento de R$ ${expense.val.toFixed(2)}?\nIsso vai debitar do seu saldo e criar um histórico.`)) {
+                        expense.paid = true;
+                        
+                        // 1. Debitar do primeiro banco disponível (ou criar lógica de escolha)
+                        const bank = DB.state.banks[0]; 
+                        if (bank) {
+                            bank.balance -= expense.val;
+                        }
+
+                        // 2. Criar registro no histórico
+                        const today = new Date().toLocaleDateString('pt-BR');
+                        DB.state.transactions.unshift({
+                            id: Date.now(),
+                            date: today,
+                            desc: `Pgto Fixo: ${expense.name}`,
+                            val: expense.val,
+                            type: 'expense',
+                            accName: bank ? bank.name : 'Caixa'
+                        });
+
+                        alert("Pago! Saldo atualizado.");
+                    }
+                } else {
+                    // Se quiser desmarcar (voltar a pendente)
+                    if(confirm("Desmarcar como pago? (O saldo NÃO será devolvido automaticamente para evitar erros).")) {
+                        expense.paid = false;
+                    }
+                }
+                DB.save(); // Salva e atualiza toda a tela (inclusive o patrimônio na Home)
             }
         },
 
         delete(id) {
-            if(confirm("Remover conta?")) {
+            if(confirm("Remover conta fixa?")) {
                 DB.state.fixed = DB.state.fixed.filter(e => e.id !== id);
                 DB.save();
             }
@@ -1214,11 +1242,15 @@
             sorted.forEach(e => {
                 totalVal += e.val;
                 if(e.paid) paidVal += e.val;
+                
                 const statusColor = e.paid ? 'var(--color-success)' : 'var(--color-danger)';
                 const statusIcon = e.paid ? 'fa-check-circle' : 'fa-circle';
                 const opacity = e.paid ? '0.5' : '1';
+                
+                // Botão de calendário só aparece se NÃO pago
                 const calendarBtn = (e.date && e.time && !e.paid) 
                     ? `<button onclick="FixedExpensesModule.exportToCalendar(${e.id})" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fas fa-calendar-plus"></i></button>` : '';
+                
                 const dateTimeDisplay = e.date ? `<small style="color:#888; display:block;">Venc: ${e.date.split('-').reverse().join('/')} ${e.time||''}</small>` : '';
 
                 list.innerHTML += `
@@ -1241,12 +1273,15 @@
                 `;
             });
 
+            // ATUALIZA OS VALORES DO RESUMO
+            const remaining = totalVal - paidVal;
             const percent = totalVal > 0 ? (paidVal / totalVal) * 100 : 0;
-            const bar = document.getElementById('fixed-progress-bar');
-            const text = document.getElementById('fixed-progress-text');
-            if(bar) bar.style.width = `${percent}%`;
-            if(text) text.innerText = `${percent.toFixed(0)}% Pago`;
             
+            document.getElementById('fixed-total').innerText = `R$ ${totalVal.toFixed(2)}`;
+            document.getElementById('fixed-paid').innerText = `R$ ${paidVal.toFixed(2)}`;
+            document.getElementById('fixed-remaining').innerText = `R$ ${remaining.toFixed(2)}`;
+            document.getElementById('fixed-progress-bar').style.width = `${percent}%`;
+
             if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhum gasto fixo.</div>';
         }
     };
