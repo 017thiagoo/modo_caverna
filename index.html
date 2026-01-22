@@ -1412,6 +1412,177 @@
         }
     };
 
+    // --- 4. FIXED EXPENSES MODULE (GASTOS FIXOS) ---
+    const FixedExpensesModule = {
+        add() {
+            const name = document.getElementById('fixed-name').value;
+            const val = parseFloat(document.getElementById('fixed-val').value);
+            const date = document.getElementById('fixed-date').value;
+            const time = document.getElementById('fixed-time').value;
+
+            if (name && !isNaN(val)) {
+                DB.state.fixed.push({
+                    id: Date.now(),
+                    name, val, date, time, paid: false
+                });
+                document.getElementById('fixed-name').value = '';
+                document.getElementById('fixed-val').value = '';
+                DB.save();
+                UI.toggle('fixed-add-form');
+            } else {
+                alert("Preencha Nome e Valor.");
+            }
+        },
+
+        toggle(id) {
+            const expense = DB.state.fixed.find(e => e.id === id);
+            if (expense) {
+                if (!expense.paid) {
+                    const banks = DB.state.banks;
+                    
+                    if (banks.length === 0) {
+                        return alert("Você precisa cadastrar um banco antes de pagar!");
+                    }
+
+                    // Menu para escolher de onde sai o dinheiro
+                    let menu = `Qual banco você usou para pagar R$ ${expense.val.toFixed(2)}?\n\n`;
+                    banks.forEach((b, index) => {
+                        menu += `${index + 1}. ${b.name} (Saldo: R$ ${b.balance.toFixed(2)})\n`;
+                    });
+                    menu += "\nDigite o NÚMERO do banco:";
+
+                    const input = prompt(menu);
+                    if (input === null) return;
+
+                    const index = parseInt(input) - 1;
+                    const selectedBank = banks[index];
+
+                    if (selectedBank) {
+                        expense.paid = true;
+                        selectedBank.balance -= expense.val;
+
+                        const today = new Date();
+                        const formattedDate = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+                        
+                        DB.state.transactions.unshift({
+                            id: Date.now(),
+                            date: formattedDate,
+                            desc: `Pgto Fixo: ${expense.name}`,
+                            val: expense.val,
+                            type: 'expense',
+                            accName: selectedBank.name
+                        });
+
+                        DB.save();
+                        alert(`Pago via ${selectedBank.name}!`);
+                    } else {
+                        alert("Opção inválida. Pagamento cancelado.");
+                    }
+
+                } else {
+                    if(confirm("Desmarcar como pago? (O valor NÃO será estornado automaticamente do banco).")) {
+                        expense.paid = false;
+                        DB.save();
+                    }
+                }
+            }
+        },
+
+        delete(id) {
+            if(confirm("Remover conta fixa?")) {
+                DB.state.fixed = DB.state.fixed.filter(e => e.id !== id);
+                DB.save();
+            }
+        },
+
+        exportToCalendar(id) {
+            const t = DB.state.fixed.find(e => e.id === id);
+            if (!t || !t.date || !t.time) return alert("Defina Data e Hora!");
+            const start = t.date.replace(/-/g, '') + 'T' + t.time.replace(/:/g, '') + '00';
+            const icsContent = [
+                'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+                `DTSTART:${start}`, `DTEND:${start}`,
+                `SUMMARY:Pagar: ${t.name}`, `DESCRIPTION:Valor: R$ ${t.val}`,
+                'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Reminder', 'END:VALARM',
+                'END:VEVENT', 'END:VCALENDAR'
+            ].join('\n');
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', `pagar_${t.name}.ics`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        },
+
+        render() {
+            const list = document.getElementById('fixed-list-container');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            const sorted = [...DB.state.fixed].sort((a, b) => {
+                if (a.date && b.date) return a.date.localeCompare(b.date);
+                return 0;
+            });
+            
+            let totalVal = 0, paidVal = 0;
+
+            sorted.forEach(e => {
+                totalVal += e.val;
+                if(e.paid) paidVal += e.val;
+                
+                const statusColor = e.paid ? 'var(--color-success)' : 'var(--color-danger)';
+                const statusIcon = e.paid ? 'fa-check-circle' : 'fa-circle';
+                const opacity = e.paid ? '0.5' : '1';
+                
+                const calendarBtn = (e.date && e.time && !e.paid) 
+                    ? `<button onclick="FixedExpensesModule.exportToCalendar(${e.id})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; margin-right:5px;" title="Adicionar ao Alarme"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
+                    : '';
+                
+                const dateTimeDisplay = e.date ? `<small style="color:#888; display:block;">Venc: ${e.date.split('-').reverse().join('/')} ${e.time||''}</small>` : '<small style="color:#888;">Sem data</small>';
+
+                list.innerHTML += `
+                    <div class="habit-card-mini fade-in" style="opacity: ${opacity}; border-left: 3px solid ${statusColor}; padding: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <i class="far ${statusIcon}" onclick="FixedExpensesModule.toggle(${e.id})" style="color:${statusColor}; cursor:pointer; font-size:1.5rem;"></i>
+                                <div>
+                                    <span style="font-weight:600; display:block;">${e.name}</span>
+                                    <span style="color:${statusColor}; font-weight:bold;">R$ ${e.val.toFixed(2)}</span>
+                                    ${dateTimeDisplay}
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                ${calendarBtn}
+                                <i class="fas fa-trash" onclick="FixedExpensesModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // ATUALIZA RESUMO
+            const remaining = totalVal - paidVal;
+            const percent = totalVal > 0 ? (paidVal / totalVal) * 100 : 0;
+            
+            const elTotal = document.getElementById('fixed-total');
+            const elPaid = document.getElementById('fixed-paid');
+            const elRem = document.getElementById('fixed-remaining');
+            const elBar = document.getElementById('fixed-progress-bar');
+            
+            if (elTotal) {
+                elTotal.innerText = `R$ ${totalVal.toFixed(2)}`;
+                elPaid.innerText = `R$ ${paidVal.toFixed(2)}`;
+                elRem.innerText = `R$ ${remaining.toFixed(2)}`;
+                elBar.style.width = `${percent}%`;
+            }
+
+            if(list.innerHTML === '') {
+                list.innerHTML = '<div class="empty-state">Nenhuma despesa fixa.</div>';
+            }
+        }
+    };
+
     // --- 5. TASK MODULE ---
     const TaskModule = {
         add() {
