@@ -1002,14 +1002,23 @@
         }
     };
 
-    // --- 2. SYSTEM CONTROLLER ---
+    // --- 2. SYSTEM CONTROLLER (CORRIGIDO) ---
     const System = {
         init() {
             DB.init();
             this.updateGreeting();
             FinanceModule.init();
-            this.refreshAll(); // Renderiza tudo ao iniciar
-            FixedIncomeModule.render()
+            
+            // Garante que o dashboard aparece
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Renderiza tudo pela primeira vez
+            this.refreshAll(); 
+            
+            // Força o desenho dos gráficos com um pequeno atraso para garantir que a tela carregou
+            setTimeout(() => {
+                if(typeof ChartsModule !== 'undefined') ChartsModule.renderAll();
+            }, 300);
         },
 
         updateGreeting() {
@@ -1024,28 +1033,39 @@
             document.querySelectorAll('.nav-btn, .mob-link').forEach(el => el.classList.remove('active'));
             if (event && event.currentTarget) event.currentTarget.classList.add('active');
             
-            // Renderiza gráficos apenas se necessário para economizar memória
+            // Se for para Dashboard ou Financeiro, redesenha os gráficos
             if (viewId === 'dashboard' || viewId === 'financeiro') {
                 setTimeout(() => ChartsModule.renderAll(), 100);
             }
         },
 
         refreshAll() {
-            // Renderiza TODOS os módulos
+            // 1. Renderiza Módulos Básicos
             FinanceModule.render();
+            
+            // 2. Renderiza Gastos Fixos
             if(typeof FixedExpensesModule !== 'undefined') FixedExpensesModule.render();
+            
+            // 3. Renderiza Receitas Fixas (ESTA LINHA ESTAVA FALTANDO NO SEU CÓDIGO)
+            if(typeof FixedIncomeModule !== 'undefined') FixedIncomeModule.render();
+
+            // 4. Renderiza o resto
             TaskModule.render();
             HabitModule.render();
             LibraryModule.render();
-            ChartsModule.renderAll();
+            
+            // 5. Atualiza Gráficos e KPIs
+            if(typeof ChartsModule !== 'undefined') ChartsModule.renderAll();
             this.updateDashboardKPIs();
         },
 
         updateDashboardKPIs() {
+            // Calcula saldo total
             const totalEquity = DB.state.banks.reduce((acc, b) => acc + b.balance, 0);
             const elEquity = document.getElementById('dash-total-equity');
             if(elEquity) elEquity.innerText = totalEquity.toFixed(2);
             
+            // Calcula tarefas
             const pending = DB.state.tasks.filter(t => !t.done).length;
             const elPending = document.getElementById('dash-pending-tasks');
             if(elPending) elPending.innerText = pending;
@@ -1077,8 +1097,9 @@
                     if (data.banks && data.tasks) {
                         if(confirm("Restaurar backup? Isso substituirá os dados atuais.")) {
                             DB.state = data;
-                            // Garante que array fixed existe
-                            if(!DB.state.fixed) DB.state.fixed = []; 
+                            // Garante integridade dos arrays novos
+                            if(!DB.state.fixed) DB.state.fixed = [];
+                            if(!DB.state.incomes) DB.state.incomes = [];
                             DB.save();
                             alert("Sucesso!");
                             location.reload();
