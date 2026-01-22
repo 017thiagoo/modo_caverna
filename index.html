@@ -847,9 +847,10 @@
 
         <div id="tarefas" class="view-section hidden fade-in">
             <div class="card card-centralizado">
-                <div class="card-header" style="justify-content: space-between;">
-                    <span class="card-title">Backlog de Execução</span>
-                    <select id="task-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="TaskModule.render()">
+                
+                <div class="card-header" style="justify-content: space-between; margin-bottom: 20px;">
+                    <span class="card-title">BACKLOG DE EXECUÇÃO</span>
+                    <select id="task-view-filter" class="form-control" style="width: auto; height: 35px; padding: 0 15px; font-size: 0.85rem;" onchange="TaskModule.render()">
                         <option value="all">Todos</option>
                         <option value="Diário">Diários</option>
                         <option value="Semanal">Semanais</option>
@@ -857,29 +858,31 @@
                     </select>
                 </div>
                 
-                <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-    
-                    <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 0; flex: 2;">
+                <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);">
                     
-                    <div class="date-time-wrapper">
-                        <input type="date" id="task-date" class="form-control">
-                        <input type="time" id="task-time" class="form-control">
+                    <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 15px; height: 50px;">
+                    
+                    <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="date" id="task-date" class="form-control" style="margin-bottom: 0; height: 50px;">
+                        <input type="time" id="task-time" class="form-control" style="margin-bottom: 0; height: 50px;">
                     </div>
                     
-                    <select id="task-freq" class="form-control" style="margin-bottom: 0; width: 110px;">
+                    <select id="task-freq" class="form-control" style="margin-bottom: 15px; height: 50px;">
                         <option value="Geral">Geral</option>
                         <option value="Diário">Diário</option>
                         <option value="Semanal">Semanal</option>
                         <option value="Mensal">Mensal</option>
                     </select>
                     
-                    <select id="task-prio" class="form-control" style="margin-bottom: 0; width: 100px;">
-                        <option value="HIGH">Alta</option>
-                        <option value="MED">Média</option>
-                        <option value="LOW">Baixa</option>
+                    <select id="task-prio" class="form-control" style="margin-bottom: 20px; height: 50px;">
+                        <option value="HIGH">Alta Prioridade</option>
+                        <option value="MED">Média Prioridade</option>
+                        <option value="LOW">Baixa Prioridade</option>
                     </select>
                     
-                    <button class="btn-primary" style="width: auto;" onclick="TaskModule.add()">Adicionar</button>
+                    <button class="btn-primary" style="width: 100%; height: 55px; font-size: 1rem; font-weight: 700; background-color: var(--color-primary);" onclick="TaskModule.add()">
+                        Adicionar
+                    </button>
                 </div>
 
                 <div id="task-list-container"></div>
@@ -2046,66 +2049,6 @@
             DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
             if (this.instances.flow) this.instances.flow.destroy();
             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
-        },
-        renderHabitPerformance() {
-            const ctx = document.getElementById('habitPerformanceChart');
-            if (!ctx) return;
-
-            // Prepara os dados: Diário, Semanal, Mensal
-            const stats = {
-                'Diário': { done: 0, total: 0 },
-                'Semanal': { done: 0, total: 0 },
-                'Mensal': { done: 0, total: 0 }
-            };
-
-            // Calcula checks
-            DB.state.habits.forEach(h => {
-                const cat = h.freq || 'Diário';
-                if(stats[cat]) {
-                    const marked = h.checks ? h.checks.filter(Boolean).length : 0;
-                    stats[cat].done += marked;
-                    stats[cat].total += 7; 
-                }
-            });
-
-            const categories = ['Diário', 'Semanal', 'Mensal'];
-            const dataDone = categories.map(c => stats[c].done);
-            const dataPending = categories.map(c => stats[c].total - stats[c].done);
-
-            if (this.instances.habit) this.instances.habit.destroy();
-
-            // Desenha o Gráfico de Barras Empilhadas
-            this.instances.habit = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: categories,
-                    datasets: [
-                        {
-                            label: 'Feito',
-                            data: dataDone,
-                            backgroundColor: '#10b981', // Verde
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Pendente',
-                            data: dataPending,
-                            backgroundColor: '#333', // Escuro
-                            borderRadius: 4
-                        }
-                    ]
-                },
-                options: {
-                    ...this.commonOptions,
-                    indexAxis: 'y', // Barra Horizontal
-                    scales: {
-                        x: { stacked: true, grid: { color: '#222' } },
-                        y: { stacked: true, grid: { display: false }, ticks: { color: '#fff' } }
-                    },
-                    plugins: {
-                        legend: { display: true, position: 'bottom', labels: { color: '#888' } }
-                    }
-                }
-            });
         }
     };
 
