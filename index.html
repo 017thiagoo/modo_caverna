@@ -715,6 +715,49 @@
                 <div class="card col-12">
                     <div class="card-header">
                         <span class="card-title">
+                            <i class="fas fa-hand-holding-usd" style="margin-right:8px; color:var(--color-success)"></i> 
+                            Receitas Fixas Mensais
+                        </span>
+                        <button class="card-action-btn" onclick="UI.toggle('inc-add-form')">+ Nova Receita</button>
+                    </div>
+
+                    <div id="inc-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
+                        <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
+                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição (ex: Salário)" style="margin-bottom:0; flex:2;">
+                            <input type="number" id="inc-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
+                        </div>
+                        <div class="date-time-wrapper" style="margin-bottom: 10px;">
+                            <input type="date" id="inc-date" class="form-control">
+                        </div>
+                        <button class="btn-primary" onclick="FixedIncomeModule.add()" style="width: 100%; background-color: var(--color-success);">Salvar Receita</button>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">PREVISÃO</small>
+                                <div style="font-weight: 700; color: #fff;" id="inc-total">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">RECEBIDO</small>
+                                <div style="font-weight: 700; color: var(--color-success);" id="inc-received">R$ 0.00</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <small style="color: #888; font-size: 0.7rem;">FALTA</small>
+                                <div style="font-weight: 700; color: #666;" id="inc-remaining">R$ 0.00</div>
+                            </div>
+                        </div>
+                        <div style="width:100%; height:4px; background:#222; border-radius:2px; overflow:hidden;">
+                            <div id="inc-progress-bar" style="width:0%; height:100%; background:var(--color-success); transition:0.5s;"></div>
+                        </div>
+                    </div>
+
+                    <div id="inc-list-container" class="habit-grid-container"></div>
+                </div>
+
+                <div class="card col-12">
+                    <div class="card-header">
+                        <span class="card-title">
                             <i class="fas fa-file-invoice-dollar" style="margin-right:8px; color:var(--color-warning)"></i> 
                             Gastos Fixos Mensais
                         </span>
@@ -924,11 +967,16 @@
             tasks: [],
             habits: [],
             library: [],
-            fixed: [] // Adicionado para suportar gastos fixos
+            fixed: [], // Gastos Fixos
+            incomes: [] // <--- ADICIONE ESTA LINHA AQUI (Receitas Fixas)
         },
         init() {
             const saved = localStorage.getItem(this.key);
-            if (saved) this.state = JSON.parse(saved);
+            if (saved) {
+                this.state = JSON.parse(saved);
+                // Garante que o array incomes existe mesmo se recuperar backup antigo
+                if (!this.state.incomes) this.state.incomes = [];
+            }
         },
         save() {
             localStorage.setItem(this.key, JSON.stringify(this.state));
@@ -951,6 +999,7 @@
             this.updateGreeting();
             FinanceModule.init();
             this.refreshAll(); // Renderiza tudo ao iniciar
+            FixedIncomeModule.render()
         },
 
         updateGreeting() {
@@ -1198,6 +1247,129 @@
                     `;
                 });
             }
+        }
+    };
+
+    // --- MÓDULO DE RECEITAS FIXAS (CÓPIA DE GASTOS ADAPTADA) ---
+    const FixedIncomeModule = {
+        add() {
+            const name = document.getElementById('inc-name').value;
+            const val = parseFloat(document.getElementById('inc-val').value);
+            const date = document.getElementById('inc-date').value;
+
+            if (name && !isNaN(val)) {
+                // Adiciona ao array de 'incomes' (receitas)
+                DB.state.incomes.push({
+                    id: Date.now(),
+                    name, val, date, received: false
+                });
+                document.getElementById('inc-name').value = '';
+                document.getElementById('inc-val').value = '';
+                DB.save();
+                UI.toggle('inc-add-form');
+            } else {
+                alert("Preencha Nome e Valor.");
+            }
+        },
+
+        toggle(id) {
+            const inc = DB.state.incomes.find(e => e.id === id);
+            if (inc) {
+                if (!inc.received) {
+                    // LÓGICA DE RECEBIMENTO: Escolhe onde vai cair o dinheiro
+                    const banks = DB.state.banks;
+                    if (banks.length === 0) return alert("Cadastre um banco primeiro!");
+
+                    let menu = `Onde você recebeu R$ ${inc.val.toFixed(2)}?\n\n`;
+                    banks.forEach((b, index) => {
+                        menu += `${index + 1}. ${b.name}\n`;
+                    });
+                    menu += "\nDigite o NÚMERO do banco:";
+
+                    const input = prompt(menu);
+                    if (input === null) return;
+                    const index = parseInt(input) - 1;
+                    const bank = banks[index];
+
+                    if (bank) {
+                        inc.received = true;
+                        bank.balance += inc.val; // SOMA ao saldo (Entrada)
+
+                        const today = new Date().toLocaleDateString('pt-BR');
+                        DB.state.transactions.unshift({
+                            id: Date.now(),
+                            date: today,
+                            desc: `Receita Fixa: ${inc.name}`,
+                            val: inc.val,
+                            type: 'income', // Tipo ENTRADA
+                            accName: bank.name
+                        });
+                        DB.save();
+                        alert(`Recebido na conta ${bank.name}!`);
+                    }
+                } else {
+                    if(confirm("Desmarcar recebimento? (O saldo NÃO será removido automaticamente).")) {
+                        inc.received = false;
+                        DB.save();
+                    }
+                }
+            }
+        },
+
+        delete(id) {
+            if(confirm("Remover receita?")) {
+                DB.state.incomes = DB.state.incomes.filter(e => e.id !== id);
+                DB.save();
+            }
+        },
+
+        render() {
+            const list = document.getElementById('inc-list-container');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            const sorted = [...DB.state.incomes].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            let total = 0, received = 0;
+
+            sorted.forEach(e => {
+                total += e.val;
+                if(e.received) received += e.val;
+
+                const statusColor = e.received ? 'var(--color-success)' : '#444'; 
+                const icon = e.received ? 'fa-check-circle' : 'fa-circle';
+                const opacity = e.received ? '0.5' : '1';
+                const dateDisplay = e.date ? `Previsão: ${e.date.split('-').reverse().join('/')}` : 'Sem data';
+
+                list.innerHTML += `
+                    <div class="habit-card-mini fade-in" style="opacity: ${opacity}; border-left: 3px solid ${statusColor}; padding: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <i class="far ${icon}" onclick="FixedIncomeModule.toggle(${e.id})" style="color:${e.received ? 'var(--color-success)' : '#666'}; cursor:pointer; font-size:1.5rem;"></i>
+                                <div>
+                                    <span style="font-weight:600; display:block;">${e.name}</span>
+                                    <span style="color:var(--color-success); font-weight:bold;">+ R$ ${e.val.toFixed(2)}</span>
+                                    <small style="color:#888;">${dateDisplay}</small>
+                                </div>
+                            </div>
+                            <i class="fas fa-trash" onclick="FixedIncomeModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Atualiza Resumo
+            const remaining = total - received;
+            const percent = total > 0 ? (received / total) * 100 : 0;
+            
+            const elTotal = document.getElementById('inc-total');
+            if(elTotal) {
+                elTotal.innerText = `R$ ${total.toFixed(2)}`;
+                document.getElementById('inc-received').innerText = `R$ ${received.toFixed(2)}`;
+                document.getElementById('inc-remaining').innerText = `R$ ${remaining.toFixed(2)}`;
+                document.getElementById('inc-progress-bar').style.width = `${percent}%`;
+            }
+
+            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma receita fixa.</div>';
         }
     };
 
