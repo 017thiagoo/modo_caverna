@@ -1277,7 +1277,7 @@
         }
     };
 
-    // --- MÓDULO RECEITAS (COM SELEÇÃO DE BANCO) ---
+    // --- 3.5 MÓDULO RECEITAS (COM EDIÇÃO) ---
     const FixedIncomeModule = {
         add() {
             const name = document.getElementById('inc-name').value;
@@ -1286,15 +1286,8 @@
             const bankId = parseInt(document.getElementById('inc-bank-select').value);
 
             if (name && !isNaN(val)) {
-                // Se não escolheu banco, avisa (ou define um padrão se preferir)
                 if(!bankId) return alert("Selecione onde o dinheiro vai cair!");
-
-                DB.state.incomes.push({ 
-                    id: Date.now(), 
-                    name, val, date, bankId, // Salva o destino
-                    received: false 
-                });
-                
+                DB.state.incomes.push({ id: Date.now(), name, val, date, bankId, received: false });
                 document.getElementById('inc-name').value = '';
                 document.getElementById('inc-val').value = '';
                 DB.save();
@@ -1302,24 +1295,33 @@
             } else { alert("Preencha Nome e Valor."); }
         },
 
+        // --- NOVA FUNÇÃO EDITAR ---
+        edit(id) {
+            const inc = DB.state.incomes.find(e => e.id === id);
+            if (inc) {
+                const newName = prompt("Editar nome:", inc.name);
+                if (newName !== null && newName.trim() !== "") {
+                    const newVal = parseFloat(prompt("Editar valor (R$):", inc.val));
+                    if (!isNaN(newVal)) {
+                        inc.name = newName;
+                        inc.val = newVal;
+                        DB.save();
+                    }
+                }
+            }
+        },
+
         toggle(id) {
             const inc = DB.state.incomes.find(e => e.id === id);
             if (inc) {
                 if (!inc.received) {
-                    // Busca o banco vinculado à receita
                     let bank = DB.state.banks.find(b => b.id === inc.bankId);
-                    
-                    // Fallback: se o banco foi excluído, tenta achar 'Caixa' ou o primeiro
-                    if (!bank) {
-                        bank = DB.state.banks.find(b => b.name.toLowerCase().includes('caixa')) || DB.state.banks[0];
-                    }
-
-                    if(!bank) return alert("Nenhum banco encontrado para receber!");
+                    if (!bank) bank = DB.state.banks.find(b => b.name.toLowerCase().includes('caixa')) || DB.state.banks[0];
+                    if(!bank) return alert("Nenhum banco encontrado!");
 
                     if (confirm(`Confirmar entrada de R$ ${inc.val.toFixed(2)} na conta ${bank.name}?`)) {
                         inc.received = true;
                         bank.balance += inc.val;
-                        
                         const today = new Date().toLocaleDateString('pt-BR');
                         DB.state.transactions.unshift({
                             id: Date.now(), date: today, desc: `Receita Fixa: ${inc.name}`,
@@ -1328,7 +1330,7 @@
                         DB.save();
                     }
                 } else {
-                    if(confirm("Desmarcar recebimento? (Saldo não será alterado).")) {
+                    if(confirm("Desmarcar recebimento?")) {
                         inc.received = false;
                         DB.save();
                     }
@@ -1344,21 +1346,18 @@
         },
 
         render() {
-            // 1. Preencher o Select de Bancos
+            // ... (Código do select de bancos mantido igual) ...
             const bankSelect = document.getElementById('inc-bank-select');
             if (bankSelect) {
                 const current = bankSelect.value;
                 bankSelect.innerHTML = '<option value="" disabled selected>Receber em...</option>';
                 DB.state.banks.forEach(b => {
                     const opt = document.createElement('option');
-                    opt.value = b.id;
-                    opt.innerText = b.name;
-                    bankSelect.appendChild(opt);
+                    opt.value = b.id; opt.innerText = b.name; bankSelect.appendChild(opt);
                 });
                 if(current) bankSelect.value = current;
             }
 
-            // 2. Renderizar Lista
             const list = document.getElementById('inc-list-container');
             if (!list) return;
             list.innerHTML = '';
@@ -1369,11 +1368,8 @@
             sorted.forEach(e => {
                 total += e.val;
                 if(e.received) received += e.val;
-
-                // Busca o nome do banco para exibir
                 const linkedBank = DB.state.banks.find(b => b.id === e.bankId);
                 const bankName = linkedBank ? linkedBank.name : 'Indefinido';
-
                 const statusColor = 'var(--color-success)'; 
                 const icon = e.received ? 'fa-check-circle' : 'fa-circle';
                 const opacity = e.received ? '0.5' : '1';
@@ -1390,16 +1386,18 @@
                                     <small style="color:#888; display:block; margin-top:2px;">Prev: ${date} • ${bankName}</small>
                                 </div>
                             </div>
-                            <i class="fas fa-trash" onclick="FixedIncomeModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <i class="fas fa-pen" onclick="FixedIncomeModule.edit(${e.id})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="FixedIncomeModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
-            // 3. Atualizar Resumo
+            // ... (Código de resumo mantido igual) ...
             const remaining = total - received;
             const percent = total > 0 ? (received / total) * 100 : 0;
-            
             const elTotal = document.getElementById('inc-total');
             if(elTotal) {
                 elTotal.innerText = `R$ ${total.toFixed(2)}`;
@@ -1407,12 +1405,11 @@
                 document.getElementById('inc-remaining').innerText = `R$ ${remaining.toFixed(2)}`;
                 document.getElementById('inc-progress-bar').style.width = `${percent}%`;
             }
-
             if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma receita fixa.</div>';
         }
     };
 
-    // --- 4. FIXED EXPENSES MODULE (GASTOS FIXOS) ---
+    // --- 4. FIXED EXPENSES MODULE (COM EDIÇÃO) ---
     const FixedExpensesModule = {
         add() {
             const name = document.getElementById('fixed-name').value;
@@ -1421,16 +1418,27 @@
             const time = document.getElementById('fixed-time').value;
 
             if (name && !isNaN(val)) {
-                DB.state.fixed.push({
-                    id: Date.now(),
-                    name, val, date, time, paid: false
-                });
+                DB.state.fixed.push({ id: Date.now(), name, val, date, time, paid: false });
                 document.getElementById('fixed-name').value = '';
                 document.getElementById('fixed-val').value = '';
                 DB.save();
                 UI.toggle('fixed-add-form');
-            } else {
-                alert("Preencha Nome e Valor.");
+            } else { alert("Preencha Nome e Valor."); }
+        },
+
+        // --- NOVA FUNÇÃO EDITAR ---
+        edit(id) {
+            const expense = DB.state.fixed.find(e => e.id === id);
+            if (expense) {
+                const newName = prompt("Editar nome:", expense.name);
+                if (newName !== null && newName.trim() !== "") {
+                    const newVal = parseFloat(prompt("Editar valor (R$):", expense.val));
+                    if (!isNaN(newVal)) {
+                        expense.name = newName;
+                        expense.val = newVal;
+                        DB.save();
+                    }
+                }
             }
         },
 
@@ -1439,48 +1447,27 @@
             if (expense) {
                 if (!expense.paid) {
                     const banks = DB.state.banks;
-                    
-                    if (banks.length === 0) {
-                        return alert("Você precisa cadastrar um banco antes de pagar!");
-                    }
+                    if (banks.length === 0) return alert("Cadastre um banco!");
 
-                    // Menu para escolher de onde sai o dinheiro
-                    let menu = `Qual banco você usou para pagar R$ ${expense.val.toFixed(2)}?\n\n`;
-                    banks.forEach((b, index) => {
-                        menu += `${index + 1}. ${b.name} (Saldo: R$ ${b.balance.toFixed(2)})\n`;
-                    });
-                    menu += "\nDigite o NÚMERO do banco:";
-
-                    const input = prompt(menu);
+                    let menu = `Pagar R$ ${expense.val.toFixed(2)} com qual banco?\n\n`;
+                    banks.forEach((b, index) => { menu += `${index + 1}. ${b.name} (R$ ${b.balance.toFixed(2)})\n`; });
+                    const input = prompt(menu + "\nNúmero:");
                     if (input === null) return;
-
-                    const index = parseInt(input) - 1;
-                    const selectedBank = banks[index];
-
-                    if (selectedBank) {
+                    
+                    const bank = banks[parseInt(input) - 1];
+                    if (bank) {
                         expense.paid = true;
-                        selectedBank.balance -= expense.val;
-
-                        const today = new Date();
-                        const formattedDate = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
-                        
+                        bank.balance -= expense.val;
+                        const today = new Date().toLocaleDateString('pt-BR');
                         DB.state.transactions.unshift({
-                            id: Date.now(),
-                            date: formattedDate,
-                            desc: `Pgto Fixo: ${expense.name}`,
-                            val: expense.val,
-                            type: 'expense',
-                            accName: selectedBank.name
+                            id: Date.now(), date: today, desc: `Pgto Fixo: ${expense.name}`,
+                            val: expense.val, type: 'expense', accName: bank.name
                         });
-
                         DB.save();
-                        alert(`Pago via ${selectedBank.name}!`);
-                    } else {
-                        alert("Opção inválida. Pagamento cancelado.");
-                    }
-
+                        alert(`Pago via ${bank.name}!`);
+                    } else { alert("Inválido."); }
                 } else {
-                    if(confirm("Desmarcar como pago? (O valor NÃO será estornado automaticamente do banco).")) {
+                    if(confirm("Desmarcar pagamento?")) {
                         expense.paid = false;
                         DB.save();
                     }
@@ -1489,13 +1476,14 @@
         },
 
         delete(id) {
-            if(confirm("Remover conta fixa?")) {
+            if(confirm("Remover conta?")) {
                 DB.state.fixed = DB.state.fixed.filter(e => e.id !== id);
                 DB.save();
             }
         },
 
         exportToCalendar(id) {
+            // ... (Mesma função de antes) ...
             const t = DB.state.fixed.find(e => e.id === id);
             if (!t || !t.date || !t.time) return alert("Defina Data e Hora!");
             const start = t.date.replace(/-/g, '') + 'T' + t.time.replace(/:/g, '') + '00';
@@ -1524,7 +1512,6 @@
                 if (a.date && b.date) return a.date.localeCompare(b.date);
                 return 0;
             });
-            
             let totalVal = 0, paidVal = 0;
 
             sorted.forEach(e => {
@@ -1534,11 +1521,7 @@
                 const statusColor = e.paid ? 'var(--color-success)' : 'var(--color-danger)';
                 const statusIcon = e.paid ? 'fa-check-circle' : 'fa-circle';
                 const opacity = e.paid ? '0.5' : '1';
-                
-                const calendarBtn = (e.date && e.time && !e.paid) 
-                    ? `<button onclick="FixedExpensesModule.exportToCalendar(${e.id})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; margin-right:5px;" title="Adicionar ao Alarme"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
-                    : '';
-                
+                const calendarBtn = (e.date && e.time && !e.paid) ? `<button onclick="FixedExpensesModule.exportToCalendar(${e.id})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; margin-right:5px;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` : '';
                 const dateTimeDisplay = e.date ? `<small style="color:#888; display:block;">Venc: ${e.date.split('-').reverse().join('/')} ${e.time||''}</small>` : '<small style="color:#888;">Sem data</small>';
 
                 list.innerHTML += `
@@ -1554,6 +1537,7 @@
                             </div>
                             <div style="display:flex; gap:10px; align-items:center;">
                                 ${calendarBtn}
+                                <i class="fas fa-pen" onclick="FixedExpensesModule.edit(${e.id})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
                                 <i class="fas fa-trash" onclick="FixedExpensesModule.delete(${e.id})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
                             </div>
                         </div>
@@ -1561,25 +1545,17 @@
                 `;
             });
 
-            // ATUALIZA RESUMO
+            // ... (Código de resumo mantido igual) ...
             const remaining = totalVal - paidVal;
             const percent = totalVal > 0 ? (paidVal / totalVal) * 100 : 0;
-            
             const elTotal = document.getElementById('fixed-total');
-            const elPaid = document.getElementById('fixed-paid');
-            const elRem = document.getElementById('fixed-remaining');
-            const elBar = document.getElementById('fixed-progress-bar');
-            
             if (elTotal) {
                 elTotal.innerText = `R$ ${totalVal.toFixed(2)}`;
-                elPaid.innerText = `R$ ${paidVal.toFixed(2)}`;
-                elRem.innerText = `R$ ${remaining.toFixed(2)}`;
-                elBar.style.width = `${percent}%`;
+                document.getElementById('fixed-paid').innerText = `R$ ${paidVal.toFixed(2)}`;
+                document.getElementById('fixed-remaining').innerText = `R$ ${remaining.toFixed(2)}`;
+                document.getElementById('fixed-progress-bar').style.width = `${percent}%`;
             }
-
-            if(list.innerHTML === '') {
-                list.innerHTML = '<div class="empty-state">Nenhuma despesa fixa.</div>';
-            }
+            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma despesa fixa.</div>';
         }
     };
 
