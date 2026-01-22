@@ -1834,12 +1834,21 @@
             const container = document.getElementById('habit-list-container');
             const filterEl = document.getElementById('habit-view-filter');
             if(!container) return;
+            
             const filter = filterEl ? filterEl.value : 'all';
+            
+            // --- NOVO: ATUALIZA O GRÁFICO BASEADO NO FILTRO SELECIONADO ---
+            if(typeof ChartsModule !== 'undefined') {
+                ChartsModule.renderHabitPerformance();
+            }
+
             container.innerHTML = '';
             const daysLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
             DB.state.habits.forEach((h, i) => {
+                // Aplica o filtro na listagem
                 if (filter !== 'all' && h.freq !== filter) return;
+                
                 const frequencia = h.freq || 'Diário';
                 let checksHtml = '';
                 if (!h.checks) h.checks = Array(7).fill(false);
@@ -2050,62 +2059,87 @@
             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
         },
         // 2. GRÁFICO DE HÁBITOS (PIZZA / ESTILO ATIVOS)
+        // 2. GRÁFICO DE HÁBITOS (3 ESTADOS: FEITO, FALHOU, PENDENTE)
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart');
             if (!ctx) return;
 
-            let totalChecks = 0;
-            let totalPossible = 0;
+            // 1. Pega o filtro atual selecionado lá no HTML
+            const filterEl = document.getElementById('habit-view-filter');
+            const currentFilter = filterEl ? filterEl.value : 'all';
 
-            // Calcula o total de bolinhas marcadas vs total de bolinhas existentes
+            // 2. Identifica o dia de hoje (0=Dom, 1=Seg, ..., 6=Sab)
+            const todayIndex = new Date().getDay();
+
+            let countDone = 0;      // Verde
+            let countMissed = 0;    // Vermelho (Não fez e já passou o dia)
+            let countPending = 0;   // Cinza (Ainda dá tempo ou é futuro)
+
+            // 3. Percorre os hábitos
             DB.state.habits.forEach(h => {
+                // Aplica o mesmo filtro da lista
+                if (currentFilter !== 'all' && h.freq !== currentFilter) return;
+
                 if(h.checks) {
-                    totalChecks += h.checks.filter(Boolean).length; // Conta quantos 'true'
-                    totalPossible += 7; // Cada hábito tem 7 dias na semana
+                    h.checks.forEach((isChecked, dayIndex) => {
+                        if (isChecked) {
+                            // Se está marcado, é CONCLUÍDO
+                            countDone++;
+                        } else {
+                            // Se não está marcado...
+                            if (dayIndex < todayIndex) {
+                                // Se o dia já passou (ex: hoje é quarta(3), e estamos olhando terca(2)), é FALHA
+                                countMissed++;
+                            } else {
+                                // Se é hoje ou futuro, é PENDENTE
+                                countPending++;
+                            }
+                        }
+                    });
                 }
             });
 
-            // Se não tiver hábitos, mostra um gráfico "vazio" (tudo cinza)
-            // Se tiver, calcula a proporção Concluído vs Pendente
-            const dataValues = totalPossible > 0 
-                ? [totalChecks, totalPossible - totalChecks] 
-                : [0, 1];
+            // Evita gráfico vazio se tudo for zero
+            const total = countDone + countMissed + countPending;
+            const dataValues = total > 0 
+                ? [countDone, countMissed, countPending] 
+                : [0, 0, 1]; // Mostra cinza se não tiver nada
             
-            // Verde para Concluído, Cinza Escuro para Pendente (igual ao fundo do gráfico de ativos)
-            const bgColors = totalPossible > 0 
-                ? ['#10b981', '#333'] 
-                : ['#333', '#333'];
+            // Cores: Verde (Feito), Vermelho (Falhou), Cinza Escuro (Pendente)
+            const bgColors = total > 0 
+                ? ['#10b981', '#ef4444', '#333'] 
+                : ['#333', '#333', '#333'];
+
+            const labels = ['Concluído', 'Não Realizado', 'Pendente'];
 
             if (this.instances.habit) this.instances.habit.destroy();
 
             this.instances.habit = new Chart(ctx, {
-                type: 'doughnut', // Formato de Rosca
+                type: 'doughnut',
                 data: {
-                    labels: ['Concluído', 'Pendente'],
+                    labels: labels,
                     datasets: [{
                         data: dataValues,
                         backgroundColor: bgColors,
-                        borderWidth: 0, // Sem borda branca, visual clean
+                        borderWidth: 0,
                         hoverOffset: 4
                     }]
                 },
                 options: {
                     ...this.commonOptions,
-                    cutout: '70%', // Rosca mais fina, elegante
-                    layout: {
-                        padding: 0
-                    },
+                    cutout: '70%',
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'right', // Legenda na direita
+                            position: 'right',
                             align: 'center',
                             labels: {
                                 color: '#eee',
-                                boxWidth: 12, // Quadradinho pequeno
-                                padding: 15,
+                                boxWidth: 12,
+                                padding: 10, // Um pouco menos de padding para caber 3 itens
                                 font: {
-                                    size: 12,
+                                    size: 11, // Fonte levemente menor para caber
                                     family: "'Inter', sans-serif"
                                 }
                             }
@@ -2116,7 +2150,7 @@
                                     const val = context.raw;
                                     const total = context.chart._metasets[context.datasetIndex].total;
                                     const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
-                                    return ` ${context.label}: ${pct} (${val})`;
+                                    return ` ${context.label}: ${val} (${pct})`;
                                 }
                             }
                         }
