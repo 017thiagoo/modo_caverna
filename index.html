@@ -997,9 +997,13 @@
             DB.init();
             this.updateGreeting();
             FinanceModule.init();
-            // Força a renderização inicial
-            this.refreshAll();
-            ChartsModule.renderAll();
+            
+            // Garante que a Home (dashboard) seja a primeira a ser renderizada
+            document.getElementById('dashboard').classList.remove('hidden');
+            this.refreshAll(); 
+            
+            // Força o desenho dos gráficos logo após abrir
+            setTimeout(() => { ChartsModule.renderAll(); }, 200);
         },
 
         updateGreeting() {
@@ -1746,18 +1750,21 @@
         }
     };
 
-    // --- 8. CHARTS MODULE (CORRIGIDO: NOMES COMPLETOS E RESPONSIVO) ---
+    // --- 8. CHARTS MODULE (CORRIGIDO: LEGENDA EM BAIXO E NOMES COMPLETOS) ---
     const ChartsModule = {
         instances: {},
         
         renderAll() {
-            // Pequeno delay para garantir que o DOM renderizou
-            setTimeout(() => { 
-                this.renderRadar(); 
-                this.renderDist(); 
-                this.renderFlow();
-                this.renderHabitPerformance(); 
-            }, 100);
+            // Verifica se o elemento existe antes de tentar desenhar
+            const dash = document.getElementById('dashboard');
+            if (dash && !dash.classList.contains('hidden')) {
+                setTimeout(() => { 
+                    this.renderRadar(); 
+                    this.renderDist(); 
+                    this.renderFlow();
+                    this.renderHabitPerformance(); 
+                }, 100);
+            }
         },
 
         commonOptions: {
@@ -1767,12 +1774,11 @@
             plugins: { legend: { display: false } }
         },
 
-        // 1. GRÁFICO DE ATIVOS (BANCOS) - NOMES COMPLETOS & RESPONSIVO
         renderDist() {
             const ctx = document.getElementById('distChart');
             if (!ctx) return;
             
-            // PEGA O NOME COMPLETO (SEM CORTAR)
+            // USE O NOME COMPLETO (SEM CORTAR)
             const labels = DB.state.banks.map(b => b.name);
             const values = DB.state.banks.map(b => b.balance);
             
@@ -1788,9 +1794,6 @@
             
             if (this.instances.dist) this.instances.dist.destroy();
             
-            // Verifica tamanho da tela para posicionar a legenda
-            const isMobile = window.innerWidth < 768;
-
             this.instances.dist = new Chart(ctx, { 
                 type: 'doughnut', 
                 data: { 
@@ -1803,22 +1806,20 @@
                 }, 
                 options: { 
                     ...this.commonOptions, 
-                    cutout: '55%', // Levemente menor para caber mais gráfico
-                    layout: {
-                        padding: 10 // Margem de segurança para não cortar
-                    },
+                    cutout: '55%', 
+                    layout: { padding: 20 }, // Margem para não cortar a sombra
                     plugins: { 
                         legend: { 
                             display: true, 
-                            // SE FOR MOBILE, LEGENDA EM BAIXO. SE PC, NA DIREITA.
-                            position: isMobile ? 'bottom' : 'right', 
-                            align: isMobile ? 'start' : 'center',
+                            // POSIÇÃO: EM BAIXO E CENTRALIZADO
+                            position: 'bottom', 
+                            align: 'center',
                             labels: { 
                                 color: '#eee', 
                                 boxWidth: 20, 
-                                padding: 15,
+                                padding: 20, 
                                 font: { 
-                                    size: isMobile ? 12 : 14, // Fonte ajustável
+                                    size: 14, // Fonte aumentada
                                     weight: 'bold' 
                                 } 
                             }
@@ -1827,8 +1828,7 @@
                             callbacks: {
                                 label: function(context) {
                                     const val = context.raw;
-                                    const label = context.label;
-                                    return ` ${label}: R$ ${val.toFixed(2)}`;
+                                    return ` R$ ${val.toFixed(2)}`;
                                 }
                             }
                         }
@@ -1837,78 +1837,34 @@
             });
         },
         
-        // 2. GRÁFICO DE HÁBITOS (PIZZA)
+        // Mantenha os outros gráficos iguais...
         renderHabitPerformance() {
-             const ctx = document.getElementById('habitPerformanceChart');
-             if (!ctx) return;
-             
+             const ctx = document.getElementById('habitPerformanceChart'); if (!ctx) return;
              let totalChecks = 0; let totalPossible = 0;
-             DB.state.habits.forEach(h => { 
-                 if(h.checks) { 
-                     totalChecks += h.checks.filter(Boolean).length; 
-                     totalPossible += 7; 
-                 } 
-             });
-             
+             DB.state.habits.forEach(h => { if(h.checks) { totalChecks += h.checks.filter(Boolean).length; totalPossible += 7; } });
              const dataValues = totalPossible > 0 ? [totalChecks, totalPossible - totalChecks] : [0, 1];
              const bgColors = totalPossible > 0 ? ['#10b981', '#333'] : ['#333', '#333'];
-             
              if (this.instances.habit) this.instances.habit.destroy();
-             
-             this.instances.habit = new Chart(ctx, { 
-                 type: 'doughnut', 
-                 data: { 
-                     labels: ['Feito', 'Falta'], 
-                     datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0 }] 
-                 }, 
-                 options: { 
-                     ...this.commonOptions, 
-                     cutout: '70%', 
-                     plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'right', 
-                            labels: { color: '#ccc', boxWidth: 15 } 
-                        } 
-                     } 
-                 } 
-             });
+             this.instances.habit = new Chart(ctx, { type: 'doughnut', data: { labels: ['Feito', 'Falta'], datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '70%', plugins: { legend: { display: true, position: 'right', labels: { color: '#ccc', boxWidth: 15 } } } } });
         },
-
         renderRadar() {
              const ctx = document.getElementById('radarChart'); if (!ctx) return;
-             const tasksTotal = DB.state.tasks.length || 1; 
-             const tasksDone = DB.state.tasks.filter(t => t.done).length; 
-             const taskScore = (tasksDone / tasksTotal) * 100;
-             
-             let habitScore = 0; let hCount = 0;
-             DB.state.habits.forEach(h => { if(h.checks) { habitScore += (h.checks.filter(Boolean).length/7)*100; hCount++; }});
-             const finalHabit = hCount > 0 ? habitScore / hCount : 0;
-
-             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, finalHabit, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
+             const tasksTotal = DB.state.tasks.length || 1; const tasksDone = DB.state.tasks.filter(t => t.done).length; const taskScore = (tasksDone / tasksTotal) * 100;
+             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
              if (this.instances.radar) this.instances.radar.destroy();
              this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         },
-
         renderFlow() {
              const ctx = document.getElementById('flowChart'); if (!ctx) return;
-             let income = 0, expense = 0; 
-             DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+             let income = 0, expense = 0; DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
              if (this.instances.flow) this.instances.flow.destroy();
              this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
         }
     };
 
     // --- 9. BOOTSTRAP (CORREÇÃO DE CARREGAMENTO) ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // Inicia o sistema
+    window.addEventListener('DOMContentLoaded', () => {
         System.init();
-        
-        // Força a renderização dos gráficos da Home imediatamente
-        ChartsModule.renderAll();
-        
-        // Atualiza a saudação e os dados
-        System.refreshAll();
     });
 </script>
 </body>
