@@ -1069,6 +1069,10 @@
                     </select>
                 </div>
                 
+                <div style="height: 300px; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                    <canvas id="taskPerformanceChart"></canvas>
+                </div>
+                
                 <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);">
                     
                     <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 15px; height: 50px;">
@@ -1881,7 +1885,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (COM EDIÇÃO) ---
+    // --- 5. TASK MODULE (ATUALIZADO COM GRÁFICO) ---
     const TaskModule = {
         add() {
             const desc = document.getElementById('task-input').value;
@@ -1897,15 +1901,11 @@
             }
         },
         
-        // --- NOVA FUNÇÃO DE EDITAR ---
         edit(index) {
             const task = DB.state.tasks[index];
             const newDesc = prompt("Editar nome da tarefa:", task.desc);
             if (newDesc !== null && newDesc.trim() !== "") {
                 task.desc = newDesc;
-                // Opcional: Se quiser editar data também, descomente abaixo:
-                // const newDate = prompt("Nova data (AAAA-MM-DD):", task.date);
-                // if(newDate) task.date = newDate;
                 DB.save();
             }
         },
@@ -1941,6 +1941,9 @@
         },
         
         render() {
+            // --- ATUALIZA O GRÁFICO AO RENDERIZAR ---
+            if(typeof ChartsModule !== 'undefined') ChartsModule.renderTaskPerformance();
+
             const list = document.getElementById('task-list-container');
             const filter = document.getElementById('task-view-filter').value;
             
