@@ -1128,11 +1128,11 @@
         }
     };
 
-    // --- 3. FINANCE MODULE ---
+    // --- 3. FINANCE MODULE (CORREÇÃO DE CORES DA LISTA) ---
     const FinanceModule = {
         init() {
             const today = new Date().toISOString().split('T')[0];
-            const inputs = ['trans-date', 'task-date', 'fixed-date'];
+            const inputs = ['trans-date', 'task-date', 'fixed-date', 'inc-date'];
             inputs.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.value = today;
@@ -1220,12 +1220,8 @@
                 if (novoValor !== trans.val) {
                     const bank = DB.state.banks.find(b => b.name === trans.accName);
                     if (bank) {
-                        // Reverte antigo
-                        if (trans.type === 'income') bank.balance -= trans.val;
-                        else bank.balance += trans.val;
-                        // Aplica novo
-                        if (trans.type === 'income') bank.balance += novoValor;
-                        else bank.balance -= novoValor;
+                        if (trans.type === 'income') bank.balance -= trans.val; else bank.balance += trans.val;
+                        if (trans.type === 'income') bank.balance += novoValor; else bank.balance -= novoValor;
                     }
                 }
                 trans.desc = novaDesc;
@@ -1247,10 +1243,12 @@
 
             DB.state.banks.forEach(b => {
                 let brandClass = '';
-                if (b.name === 'Nubank') brandClass = 'bank-nubank';
-                else if (b.name === 'Inter') brandClass = 'bank-inter';
-                else if (b.name === 'Banco do Brasil') brandClass = 'bank-bb';
-                else if (b.name === 'Caixa') brandClass = 'bank-caixa';
+                const n = b.name.toLowerCase();
+                
+                // --- LÓGICA DE CORES DA LISTA CORRIGIDA ---
+                if (n.includes('itaú') || n.includes('itau')) brandClass = 'bank-itau';
+                else if (n.includes('btg')) brandClass = 'bank-btg';
+                else if (n.includes('caixa')) brandClass = 'bank-caixa';
 
                 list.innerHTML += `
                     <div class="bank-card ${brandClass}">
@@ -1968,129 +1966,77 @@
             plugins: { legend: { display: false } }
         },
 
-        // GRÁFICO DE ATIVOS
         renderDist() {
             const ctx = document.getElementById('distChart');
             if (!ctx) return;
+            
+            // LÓGICA PARA ENCURTAR NOMES (Para não cortar no mobile)
             const labels = DB.state.banks.map(b => {
-                if (b.name === 'Banco do Brasil') return 'BB';
-                if (b.name === 'Caixa Econômica') return 'Caixa';
-                return b.name.substring(0, 12);
+                const n = b.name;
+                if (n.includes('Banco do Brasil')) return 'BB';
+                if (n.includes('Caixa')) return 'Caixa';
+                if (n.includes('Itaú')) return 'Itaú';
+                if (n.includes('BTG')) return 'BTG';
+                return n.substring(0, 12);
             });
+            
             const values = DB.state.banks.map(b => b.balance);
+            
+            // --- LÓGICA DE CORES DO GRÁFICO CORRIGIDA ---
             const colors = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
-                if(n.includes('nubank')) return '#820ad1';
-                if(n.includes('inter')) return '#ff7a00';
-                if(n.includes('brasil') || n.includes('bb')) return '#fce300';
-                if(n.includes('caixa')) return '#005ca9';
-                return '#333';
+                if(n.includes('itaú') || n.includes('itau')) return '#ec7000'; // Laranja Itaú
+                if(n.includes('btg')) return '#00295F'; // Azul Escuro BTG
+                if(n.includes('caixa')) return '#005ca9'; // Azul Caixa
+                return '#333'; // Padrão se não achar
             });
             
             if (this.instances.dist) this.instances.dist.destroy();
             
             this.instances.dist = new Chart(ctx, { 
                 type: 'doughnut', 
-                data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, 
+                data: { 
+                    labels, 
+                    datasets: [{ 
+                        data: values.length ? values : [1], 
+                        backgroundColor: values.length ? colors : ['#333'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
                 options: { 
                     ...this.commonOptions, 
                     cutout: '60%', 
+                    layout: {
+                        padding: 0
+                    },
                     plugins: { 
                         legend: { 
                             display: true, 
-                            position: 'bottom', 
-                            labels: { color: '#eee', boxWidth: 15, padding: 15, font: { size: 12, weight: 'bold' } } 
-                        } 
-                    } 
-                } 
-            });
-        },
-
-        // --- GRÁFICO DE HÁBITOS INTELIGENTE (AQUI ESTÁ A MUDANÇA) ---
-        renderHabitPerformance() {
-            const ctx = document.getElementById('habitPerformanceChart');
-            if (!ctx) return;
-
-            // 1. Pega o filtro selecionado no HTML
-            const filterEl = document.getElementById('habit-view-filter');
-            const currentFilter = filterEl ? filterEl.value : 'all';
-
-            // 2. Dia de hoje (0=Dom ... 6=Sab)
-            const todayIndex = new Date().getDay();
-
-            let countDone = 0;      // Verde (Feito)
-            let countMissed = 0;    // Vermelho (Não fez e dia já passou)
-            let countPending = 0;   // Cinza (Ainda dá tempo ou dia futuro)
-
-            // 3. Loop inteligente
-            DB.state.habits.forEach(h => {
-                // Só conta se o hábito pertencer ao filtro atual
-                if (currentFilter !== 'all' && h.freq !== currentFilter) return;
-
-                if(h.checks) {
-                    h.checks.forEach((isChecked, dayIndex) => {
-                        if (isChecked) {
-                            countDone++;
-                        } else {
-                            if (dayIndex < todayIndex) {
-                                countMissed++; // Dia já passou e não marcou
-                            } else {
-                                countPending++; // Hoje ou futuro
-                            }
-                        }
-                    });
-                }
-            });
-
-            const total = countDone + countMissed + countPending;
-            // Se não tiver dados, mostra gráfico vazio cinza
-            const dataValues = total > 0 ? [countDone, countMissed, countPending] : [0, 0, 1];
-            
-            // Cores: Verde, Vermelho, Cinza Escuro
-            const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
-            const labels = ['Concluído', 'Não Realizado', 'Pendente'];
-
-            if (this.instances.habit) this.instances.habit.destroy();
-
-            this.instances.habit = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataValues,
-                        backgroundColor: bgColors,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    ...this.commonOptions,
-                    cutout: '70%',
-                    layout: { padding: 0 },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'right', // Legenda na lateral
+                            position: 'right',
                             align: 'center',
-                            labels: {
-                                color: '#eee',
-                                boxWidth: 12,
-                                padding: 10,
-                                font: { size: 11, family: "'Inter', sans-serif" }
+                            labels: { 
+                                color: '#eee', 
+                                boxWidth: 15, 
+                                padding: 17, 
+                                font: { 
+                                    size: 15, 
+                                    weight: 'normal',
+                                    family: "'Inter', sans-serif"
+                                }
                             }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
+                                    const index = context.dataIndex;
+                                    const originalName = DB.state.banks[index].name; 
                                     const val = context.raw;
-                                    const total = context.chart._metasets[context.datasetIndex].total;
-                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
-                                    return ` ${context.label}: ${val} (${pct})`;
+                                    return ` ${originalName}: R$ ${val.toFixed(2)}`;
                                 }
                             }
                         }
-                    }
-                }
+                    } 
+                } 
             });
         },
 
