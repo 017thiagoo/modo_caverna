@@ -2000,14 +2000,13 @@
         }
     };
 
-    // --- 6. HABIT MODULE (ATUALIZADO: LINHA DO TEMPO ATÉ 2026) ---
+    // --- 6. HABIT MODULE (ATUALIZADO: COM BOTÃO DE CONCLUIR) ---
     const HabitModule = {
         editingIdx: null,
 
-        // Gera datas de Hoje até Fim de 2026
         generateDateRange() {
             const days = [];
-            const curr = new Date();
+            const curr = new Date(); 
             curr.setHours(0,0,0,0);
             const end = new Date('2026-12-31T23:59:59');
             const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -2015,20 +2014,15 @@
             while (curr <= end) {
                 const d = curr.getDate().toString().padStart(2, '0');
                 const m = (curr.getMonth() + 1).toString().padStart(2, '0');
-                // Ajuste de fuso horário local para a chave
                 const offset = curr.getTimezoneOffset() * 60000;
                 const localISOTime = (new Date(curr.getTime() - offset)).toISOString().slice(0,10);
-
-                days.push({
-                    label: `${weekDays[curr.getDay()]}<br>${d}/${m}`,
-                    key: localISOTime
-                });
+                days.push({ label: `${weekDays[curr.getDay()]}<br>${d}/${m}`, key: localISOTime });
                 curr.setDate(curr.getDate() + 1);
             }
             return days;
         },
 
-        checkWeeklyReset() {}, // Não necessário no modelo contínuo
+        checkWeeklyReset() {},
 
         save() {
             const txt = document.getElementById('habit-input').value;
@@ -2039,8 +2033,8 @@
                     DB.state.habits[this.editingIdx].freq = freq;
                     this.cancelEdit();
                 } else {
-                    // Salva checks como Objeto {} em vez de Array []
-                    DB.state.habits.push({ txt, freq, checks: {} }); 
+                    // Adiciona completed: false por padrão
+                    DB.state.habits.push({ txt, freq, checks: {}, completed: false }); 
                     document.getElementById('habit-input').value = '';
                 }
                 DB.save();
@@ -2066,12 +2060,14 @@
             btn.style.backgroundColor = ''; 
         },
 
-        toggle(hIdx, dateKey) {
-            // Converte para objeto se for antigo (Array) ou undefined
+        // Marca/Desmarca o dia específico
+        toggleDay(hIdx, dateKey) {
+            // Se o hábito estiver concluído, não deixa mexer nos dias (opcional, mas faz sentido)
+            if (DB.state.habits[hIdx].completed) return; 
+
             if (!DB.state.habits[hIdx].checks || Array.isArray(DB.state.habits[hIdx].checks)) {
                 DB.state.habits[hIdx].checks = {};
             }
-
             if (DB.state.habits[hIdx].checks[dateKey]) {
                 delete DB.state.habits[hIdx].checks[dateKey];
             } else {
@@ -2081,9 +2077,16 @@
             if(typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
             this.render();
         },
+
+        // --- NOVO: Marca o Hábito inteiro como Concluído ---
+        toggleCompletion(index) {
+            DB.state.habits[index].completed = !DB.state.habits[index].completed;
+            DB.save();
+            this.render(); // Re-renderiza para reordenar
+        },
         
         delete(index) {
-            if(confirm("Apagar hábito?")) { 
+            if(confirm("Apagar hábito permanentemente?")) { 
                 if(this.editingIdx === index) this.cancelEdit();
                 DB.state.habits.splice(index, 1); 
                 DB.save(); 
@@ -2096,38 +2099,67 @@
             const container = document.getElementById('habit-list-container');
             const filterEl = document.getElementById('habit-view-filter');
             if(!container) return;
+            
             const filter = filterEl ? filterEl.value : 'all';
             container.innerHTML = '';
 
             const dateList = this.generateDateRange(); 
-            // Renderiza apenas os próximos 365 dias para performance
             const visibleDays = dateList.slice(0, 365); 
 
-            DB.state.habits.forEach((h, i) => {
+            // Ordena: Ativos primeiro, Concluídos por último
+            // Precisamos mapear o índice original para não quebrar as funções de toggle/delete
+            const mappedHabits = DB.state.habits.map((h, i) => ({ ...h, originalIndex: i }));
+            
+            mappedHabits.sort((a, b) => {
+                if (a.completed === b.completed) return 0;
+                return a.completed ? 1 : -1;
+            });
+
+            let hasItems = false;
+
+            mappedHabits.forEach((h) => {
+                const i = h.originalIndex; // Usa o índice real do array principal
+
                 if (filter !== 'all' && h.freq !== filter) return;
+                hasItems = true;
                 
-                // Tratamento de segurança para dados antigos
+                // Tratamento de segurança
                 let safeChecks = h.checks;
                 if (!safeChecks || Array.isArray(safeChecks)) safeChecks = {};
 
+                // Estilos para item concluído
+                const isCompleted = h.completed;
+                const opacity = isCompleted ? '0.5' : '1';
+                const titleStyle = isCompleted ? 'text-decoration: line-through; color: #888;' : 'font-weight:600;';
+                const mainIcon = isCompleted ? 'fa-check-circle' : 'fa-circle';
+                const mainIconColor = isCompleted ? 'var(--color-success)' : '#444';
+                
+                // Gera os quadradinhos (se concluído, desabilita visualmente o cursor)
                 let checksHtml = '';
+                const cursorStyle = isCompleted ? 'cursor: default;' : 'cursor: pointer;';
+                
                 visibleDays.forEach((dateObj, idx) => {
                     const isChecked = safeChecks[dateObj.key] ? 'checked' : '';
                     const isToday = idx === 0 ? 'today' : '';
                     checksHtml += `
-                        <div class="habit-day-col ${isToday}">
+                        <div class="habit-day-col ${isToday}" style="${cursorStyle}">
                             <span class="habit-day-label">${dateObj.label}</span>
-                            <div class="day-check ${isChecked}" onclick="HabitModule.toggle(${i}, '${dateObj.key}')"></div>
+                            <div class="day-check ${isChecked}" onclick="HabitModule.toggleDay(${i}, '${dateObj.key}')" style="${cursorStyle}"></div>
                         </div>
                     `;
                 });
 
                 container.innerHTML += `
-                    <div class="habit-card-mini fade-in">
+                    <div class="habit-card-mini fade-in" style="opacity: ${opacity}; transition: opacity 0.3s;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <div style="flex: 1;">
-                                <span style="font-weight:600; display:block;">${h.txt}</span>
-                                <span class="cat-badge">${h.freq || 'Diário'}</span>
+                            <div style="display:flex; align-items:center; gap: 10px; flex: 1;">
+                                <i class="far ${mainIcon}" onclick="HabitModule.toggleCompletion(${i})" style="font-size: 1.2rem; color: ${mainIconColor}; cursor: pointer;" title="Concluir Hábito/Curso"></i>
+                                
+                                <div>
+                                    <span style="${titleStyle} display:block;">${h.txt}</span>
+                                    <span class="cat-badge">${h.freq || 'Diário'}</span>
+                                    ${isCompleted ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : ''}
+                                </div>
                             </div>
                             <div style="display:flex; gap:15px; align-items: center;">
                                 <i class="fas fa-pen" onclick="HabitModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;"></i>
@@ -2138,7 +2170,8 @@
                     </div>
                 `;
             });
-            if(container.innerHTML === '') container.innerHTML = '<div class="empty-state">Sem hábitos neste filtro.</div>';
+            
+            if(!hasItems) container.innerHTML = '<div class="empty-state">Sem hábitos neste filtro.</div>';
         }
     };
 
@@ -2313,7 +2346,7 @@
             this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 14, family: "'Inter', sans-serif" } } } } } });
         },
 
-        // --- CORREÇÃO AQUI: Lida com Objeto e Array ---
+        // --- Atualize apenas esta função dentro do ChartsModule ---
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart'); if (!ctx) return;
             const filterEl = document.getElementById('habit-view-filter');
@@ -2325,14 +2358,17 @@
             DB.state.habits.forEach(h => {
                 if (currentFilter !== 'all' && h.freq !== currentFilter) return;
 
-                // Se for o NOVO formato (Objeto)
+                // Se o hábito já foi encerrado, conta como feito (ou ignora, aqui conto como Done para positividade)
+                if (h.completed) {
+                    cDone++; 
+                    return; // Sai e vai pro próximo, não checa pendência de hoje
+                }
+
+                // Lógica normal para hábitos ativos
                 if (h.checks && !Array.isArray(h.checks)) {
-                    // Conta quantos true existem
                     cDone += Object.values(h.checks).filter(v => v === true).length;
-                    // Se não fez hoje, conta como pendente
                     if (!h.checks[todayStr]) cPending++;
                 } 
-                // Se for o ANTIGO formato (Array) - Fallback para não quebrar
                 else if (Array.isArray(h.checks)) {
                     h.checks.forEach(c => { if(c) cDone++; else cPending++; });
                 }
