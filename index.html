@@ -1077,7 +1077,7 @@
                     </select>
                 </div>
 
-                <div style="height: 180px; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                <div style="height: 280px; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">
                     <canvas id="habitPerformanceChart"></canvas>
                 </div>
 
@@ -2128,21 +2128,26 @@
         }
     };
 
-    // --- 8. CHARTS MODULE (VERSÃO FINAL: NOMES CURTOS + 3 CORES HÁBITOS + HOME FIX) ---
+    // --- 8. CHARTS MODULE (ATUALIZADO COM GRÁFICO DE TAREFAS E LEGENDA EMBAIXO) ---
     const ChartsModule = {
         instances: {},
         
         renderAll() {
-            // Verifica se o container está visível para evitar erros de renderização
             const dash = document.getElementById('dashboard');
-            if (dash && dash.classList.contains('hidden')) return;
+            
+            // Renderiza gráficos gerais apenas se dashboard estiver visível
+            if (dash && !dash.classList.contains('hidden')) {
+                setTimeout(() => {
+                    this.renderRadar(); 
+                    this.renderDist(); 
+                    this.renderFlow();
+                }, 100);
+            }
 
-            // Renderiza com um pequeno delay para garantir que o CSS aplicou o tamanho
+            // Renderiza gráficos específicos (Tarefas e Hábitos) sempre que possível
             setTimeout(() => {
-                this.renderRadar(); 
-                this.renderDist(); 
-                this.renderFlow();
                 this.renderHabitPerformance(); 
+                this.renderTaskPerformance();
             }, 100);
         },
 
@@ -2153,25 +2158,12 @@
             plugins: { legend: { display: false } }
         },
 
-        // 1. GRÁFICO DE ATIVOS (BANCOS) - COM NOMES PERSONALIZADOS
-        // GRÁFICO DE ATIVOS (CORRIGIDO: FONTE MAIOR E SEM NEGRITO)
+        // 1. GRÁFICO DE ATIVOS
         renderDist() {
             const ctx = document.getElementById('distChart');
             if (!ctx) return;
-            
-            // LÓGICA PARA ENCURTAR NOMES
-            const labels = DB.state.banks.map(b => {
-                const n = b.name;
-                if (n.includes('Banco do Brasil')) return 'BB';
-                if (n.includes('Caixa')) return 'Caixa';
-                if (n.includes('Itaú')) return 'Itaú';
-                if (n.includes('BTG')) return 'BTG';
-                return n.substring(0, 12);
-            });
-            
+            const labels = DB.state.banks.map(b => b.name.substring(0, 12));
             const values = DB.state.banks.map(b => b.balance);
-            
-            // CORES
             const colors = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
                 if(n.includes('itaú') || n.includes('itau')) return '#ec7000';
@@ -2179,95 +2171,73 @@
                 if(n.includes('caixa')) return '#005ca9';
                 return '#333';
             });
-            
             if (this.instances.dist) this.instances.dist.destroy();
-            
-            this.instances.dist = new Chart(ctx, { 
-                type: 'doughnut', 
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: values.length ? values : [1], 
-                        backgroundColor: values.length ? colors : ['#333'], 
-                        borderWidth: 0 
-                    }] 
-                }, 
-                options: { 
-                    ...this.commonOptions, 
-                    cutout: '55%', 
-                    layout: { padding: 10 },
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'bottom', 
-                            align: 'center',
-                            labels: { 
-                                color: '#eee', 
-                                boxWidth: 15, 
-                                padding: 20, 
-                                // --- AQUI VOCÊ MEXE NA FONTE ---
-                                font: { 
-                                    size: 18,      // Aumentei o tamanho (era 12)
-                                    weight: 'normal', // Tirei o negrito (era 'bold')
-                                    family: "'Inter', sans-serif"
-                                } 
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.raw;
-                                    const label = context.label;
-                                    return ` ${label}: R$ ${val.toFixed(2)}`;
-                                }
-                            }
-                        }
-                    } 
-                } 
-            });
+            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 14, family: "'Inter', sans-serif" } } } } } });
         },
 
-        // 2. GRÁFICO DE HÁBITOS (3 ESTADOS: FEITO, FALHOU, PENDENTE)
+        // 2. GRÁFICO DE HÁBITOS
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart');
             if (!ctx) return;
-
-            const filterEl = document.getElementById('habit-view-filter');
-            const currentFilter = filterEl ? filterEl.value : 'all';
+            const filter = document.getElementById('habit-view-filter') ? document.getElementById('habit-view-filter').value : 'all';
             const todayIndex = new Date().getDay();
-
-            let countDone = 0;      // Verde
-            let countMissed = 0;    // Vermelho
-            let countPending = 0;   // Cinza
+            let cDone = 0, cMissed = 0, cPending = 0;
 
             DB.state.habits.forEach(h => {
-                if (currentFilter !== 'all' && h.freq !== currentFilter) return;
-
+                if (filter !== 'all' && h.freq !== filter) return;
                 if(h.checks) {
                     h.checks.forEach((isChecked, dayIndex) => {
-                        if (isChecked) {
-                            countDone++;
-                        } else {
-                            if (dayIndex < todayIndex) countMissed++; // Passou o dia
-                            else countPending++; // Hoje ou futuro
-                        }
+                        if (isChecked) cDone++;
+                        else if (dayIndex < todayIndex) cMissed++;
+                        else cPending++;
                     });
                 }
             });
+            this.renderDoughnut(ctx, 'habit', cDone, cMissed, cPending);
+        },
 
-            const total = countDone + countMissed + countPending;
-            const dataValues = total > 0 ? [countDone, countMissed, countPending] : [0, 0, 1];
+        // 3. NOVO: GRÁFICO DE TAREFAS
+        renderTaskPerformance() {
+            const ctx = document.getElementById('taskPerformanceChart');
+            if (!ctx) return;
             
-            // Verde, Vermelho, Cinza
-            const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
-            const labels = ['Concluído', 'Não Realizado', 'Pendente'];
+            const filter = document.getElementById('task-view-filter') ? document.getElementById('task-view-filter').value : 'all';
+            const today = new Date().toISOString().split('T')[0];
+            
+            let cDone = 0, cMissed = 0, cPending = 0;
 
-            if (this.instances.habit) this.instances.habit.destroy();
+            DB.state.tasks.forEach(t => {
+                const tFreq = t.freq || 'Geral';
+                if (filter !== 'all' && tFreq !== filter) return;
 
-            this.instances.habit = new Chart(ctx, {
+                if (t.done) {
+                    cDone++; // Verde
+                } else {
+                    if (!t.date) {
+                        cPending++; 
+                    } else if (t.date < today) {
+                        cMissed++; // Vermelho (Atrasado)
+                    } else {
+                        cPending++; // Cinza (No prazo)
+                    }
+                }
+            });
+
+            this.renderDoughnut(ctx, 'task', cDone, cMissed, cPending);
+        },
+
+        // --- FUNÇÃO AUXILIAR NOVA PARA DESENHAR GRÁFICO ---
+        renderDoughnut(ctx, instanceName, done, missed, pending) {
+            const total = done + missed + pending;
+            const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
+            const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333']; // Verde, Vermelho, Cinza
+
+            if (this.instances[instanceName]) this.instances[instanceName].destroy();
+
+            this.instances[instanceName] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels: ['Concluído', 'Atrasado/Falta', 'Pendente'],
                     datasets: [{
                         data: dataValues,
                         backgroundColor: bgColors,
@@ -2277,22 +2247,22 @@
                 },
                 options: {
                     ...this.commonOptions,
-                    cutout: '70%',
-                    layout: { padding: 0 },
+                    cutout: '60%', // Gráfico mais grosso
+                    layout: { padding: 10 },
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'right',
+                            position: 'bottom', // LEGENDA EM BAIXO
                             align: 'center',
-                            labels: {
-                                color: '#eee',
-                                boxWidth: 12,
-                                padding: 10,
+                            labels: { 
+                                color: '#eee', 
+                                boxWidth: 15, 
+                                padding: 25, // Espaço entre gráfico e legenda
                                 font: { 
-                                    size: 16,      // Aumentei o tamanho (era 12)
-                                    weight: 'normal', // Tirei o negrito (era 'bold')
-                                    family: "'Inter', sans-serif"
-                                }
+                                    size: 15, // Letra maior
+                                    weight: 'bold',
+                                    family: "'Inter', sans-serif" 
+                                } 
                             }
                         }
                     }
@@ -2300,24 +2270,24 @@
             });
         },
 
-        // 3. RADAR (MANTIDO IGUAL)
+        // 4. RADAR
         renderRadar() {
-             const ctx = document.getElementById('radarChart'); if (!ctx) return;
-             const tasksTotal = DB.state.tasks.length || 1; 
-             const tasksDone = DB.state.tasks.filter(t => t.done).length; 
-             const taskScore = (tasksDone / tasksTotal) * 100;
-             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
-             if (this.instances.radar) this.instances.radar.destroy();
-             this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
+            const ctx = document.getElementById('radarChart'); if (!ctx) return;
+            const tasksTotal = DB.state.tasks.length || 1; 
+            const tasksDone = DB.state.tasks.filter(t => t.done).length; 
+            const taskScore = (tasksDone / tasksTotal) * 100;
+            const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
+            if (this.instances.radar) this.instances.radar.destroy();
+            this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         },
 
-        // 4. FLUXO DE CAIXA (MANTIDO IGUAL)
+        // 5. FLUXO
         renderFlow() {
-             const ctx = document.getElementById('flowChart'); if (!ctx) return;
-             let income = 0, expense = 0; 
-             DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
-             if (this.instances.flow) this.instances.flow.destroy();
-             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
+            const ctx = document.getElementById('flowChart'); if (!ctx) return;
+            let income = 0, expense = 0; 
+            DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+            if (this.instances.flow) this.instances.flow.destroy();
+            this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
         }
     };
 
