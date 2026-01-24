@@ -448,81 +448,77 @@
         @media (max-width: 768px) {
             /* 1. Esconde coisas de PC */
             .sidebar, .youtube-widget { display: none !important; }
-            .mobile-nav { display: flex !important; }
+            .mobile-nav { display: flex; }
             .mobile-only { display: block !important; }
 
-            /* 2. Layout Principal */
+            /* 2. SAUDAÇÃO (Mantida no lugar que você escolheu: 0rem) */
             .main-content { 
                 height: 100dvh;
                 overflow-y: auto;
-                padding: 0rem 1rem 85px 1rem !important;
+                padding: 0rem 1rem 8rem 1rem !important; /* Mantido 0rem */
                 -webkit-overflow-scrolling: touch;
             }
             
             .header-title-group h1 { font-size: 1.5rem; }
+            
+            /* 3. Layout Geral */
             .grid-container { display: flex; flex-direction: column; gap: 1.5rem; }
             .col-4, .col-6, .col-8, .col-12 { width: 100%; }
             .card { padding: 1.2rem; }
+            .mobile-nav { padding: 10px 20px 10px 20px; height: auto; z-index: 9999; }
 
-            /* 3. Inputs e Formulários */
+            /* 4. PADRONIZAÇÃO DE INPUTS (Mobile) */
             .input-group-row, 
             #financeiro .input-group-row { 
                 flex-direction: column !important;
-                gap: 10px !important;
+                gap: 10px !important; /* Adicionei gap explícito */
                 margin-bottom: 15px !important;
             }
             
+            /* Ajuste específico para o wrapper de Data/Hora/Botão */
             .date-time-wrapper {
-                flex-direction: column !important;
+                flex-direction: column !important; /* Força coluna no mobile */
                 gap: 10px !important;
                 width: 100% !important;
             }
 
             .date-time-wrapper input,
             .date-time-wrapper button {
-                width: 100% !important;
+                width: 100% !important; /* Ocupa largura total */
                 margin-bottom: 0 !important;
-                flex: none !important;
+                flex: none !important; /* Remove flexibilidade para garantir tamanho */
             }
 
-            /* Estilo padrão dos inputs */
-            .form-control, .btn-primary {
+            /* 5. ESTILO GERAL DOS CAMPOS */
+            .form-control, 
+            .btn-primary {
                 width: 100% !important;
                 margin-bottom: 12px !important;
+                flex: none !important;
                 height: 45px !important;
+                line-height: 45px;
+                font-size: 0.9rem !important;
+                padding: 0 12px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Reset iOS para Data/Hora */
+            input[type="date"], input[type="time"] {
+                -webkit-appearance: none;
+                appearance: none;
+                display: block;
             }
             
-            /* Remove margem do último item do grupo */
+            /* Remove margem do último item */
             .input-group-row .form-control:last-child,
             .input-group-row .btn-primary { margin-bottom: 0 !important; }
 
+            .btn-primary { justify-content: center !important; }
+
             /* Botões Financeiros */
             .btns-financeiro { flex-direction: row !important; gap: 10px !important; margin-top: 5px; }
-            .btns-financeiro button { width: 100% !important; height: 40px !important; margin-bottom: 0 !important; }
-            
-            /* --- CORREÇÃO DOS BOTÕES DE TAREFA (LADO A LADO) --- */
-            .task-btns-row {
-                display: flex !important;
-                flex-direction: row !important;
-                gap: 10px !important;
-                width: 100% !important;
-            }
-            /* O botão de Salvar cresce */
-            .task-btns-row #btn-task-save {
-                width: auto !important;
-                flex: 1 !important; 
-                margin-bottom: 0 !important;
-            }
-            /* O botão de Cancelar (X) fica pequeno e fixo */
-            .task-btns-row #btn-task-cancel {
-                width: 60px !important;
-                flex: none !important;
-                margin-bottom: 0 !important;
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-            }
-            
+            .btns-financeiro button { width: 100% !important; height: 40px !important; margin-bottom: 0 !important; display: flex; align-items: center; justify-content: center; }
+
             .card-header select { width: 100px !important; height: 35px !important; font-size: 0.8rem !important; margin-bottom: 0 !important; }
         }
         
@@ -1011,20 +1007,7 @@
             </div>
         </div>
 
-        <div id="tarefas" class="view-section hidden fade-in">
-            <div class="card card-centralizado">
-                
-                <div class="card-header" style="justify-content: space-between; margin-bottom: 20px;">
-                    <span class="card-title">BACKLOG DE EXECUÇÃO</span>
-                    <select id="task-view-filter" class="form-control" style="width: auto; height: 35px; padding: 0 15px; font-size: 0.85rem;" onchange="TaskModule.render()">
-                        <option value="all">Todos</option>
-                        <option value="Diário">Diários</option>
-                        <option value="Semanal">Semanais</option>
-                        <option value="Mensal">Mensais</option>
-                    </select>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);">
+        <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);">
                     
                     <input type="text" id="task-input" class="form-control" placeholder="Nova tarefa..." style="margin-bottom: 15px; height: 50px;">
                     
@@ -1798,12 +1781,9 @@
         }
     };
 
-    // --- 5. TASK MODULE (COM EDIÇÃO COMPLETA) ---
+    // --- 5. TASK MODULE (COM EDIÇÃO) ---
     const TaskModule = {
-        editingIndex: null, // Variável para controlar qual tarefa está sendo editada
-
-        save() {
-            // Pega todos os valores dos inputs
+        add() {
             const desc = document.getElementById('task-input').value;
             const date = document.getElementById('task-date').value;
             const time = document.getElementById('task-time').value;
@@ -1811,75 +1791,23 @@
             const freq = document.getElementById('task-freq').value;
 
             if (desc) {
-                if (this.editingIndex !== null) {
-                    // --- MODO EDIÇÃO: Atualiza a tarefa existente ---
-                    const t = DB.state.tasks[this.editingIndex];
-                    t.desc = desc;
-                    t.date = date;
-                    t.time = time;
-                    t.prio = prio;
-                    t.freq = freq;
-                    
-                    // Reseta o estado
-                    this.editingIndex = null;
-                    document.getElementById('btn-task-save').innerText = 'Adicionar';
-                    document.getElementById('btn-task-save').style.backgroundColor = 'var(--color-primary)';
-                    document.getElementById('btn-task-cancel').classList.add('hidden'); // Esconde botão cancelar
-                } else {
-                    // --- MODO CRIAÇÃO: Adiciona nova tarefa ---
-                    DB.state.tasks.push({ desc, date, time, prio, freq, done: false });
-                }
-
-                // Limpa os campos
+                DB.state.tasks.push({ desc, date, time, prio, freq, done: false });
                 document.getElementById('task-input').value = '';
-                document.getElementById('task-time').value = '';
-                // Opcional: Manter a data ou limpar. Vou manter a data atual para facilitar
-                
                 DB.save();
-            } else {
-                alert("Digite a descrição da tarefa.");
             }
         },
-
+        
+        // --- NOVA FUNÇÃO DE EDITAR ---
         edit(index) {
-            // Pega a tarefa baseada no índice
-            // OBS: Precisamos achar o índice real no array original, pois a lista pode estar filtrada/ordenada
-            // Mas o botão de editar que renderizamos já passa o índice original.
             const task = DB.state.tasks[index];
-            
-            if (task) {
-                this.editingIndex = index;
-
-                // Preenche os inputs com os dados da tarefa
-                document.getElementById('task-input').value = task.desc;
-                document.getElementById('task-date').value = task.date;
-                document.getElementById('task-time').value = task.time;
-                document.getElementById('task-prio').value = task.prio;
-                document.getElementById('task-freq').value = task.freq || 'Geral';
-
-                // Muda o visual do botão para indicar edição
-                const btn = document.getElementById('btn-task-save');
-                btn.innerText = 'Salvar Alterações';
-                btn.style.backgroundColor = 'var(--color-success)';
-                
-                // Mostra botão de cancelar
-                document.getElementById('btn-task-cancel').classList.remove('hidden');
-
-                // Rola a tela para o formulário
-                document.querySelector('#tarefas .card-centralizado').scrollIntoView({ behavior: 'smooth' });
+            const newDesc = prompt("Editar nome da tarefa:", task.desc);
+            if (newDesc !== null && newDesc.trim() !== "") {
+                task.desc = newDesc;
+                // Opcional: Se quiser editar data também, descomente abaixo:
+                // const newDate = prompt("Nova data (AAAA-MM-DD):", task.date);
+                // if(newDate) task.date = newDate;
+                DB.save();
             }
-        },
-
-        cancelEdit() {
-            this.editingIndex = null;
-            document.getElementById('task-input').value = '';
-            document.getElementById('task-time').value = '';
-            
-            const btn = document.getElementById('btn-task-save');
-            btn.innerText = 'Adicionar';
-            btn.style.backgroundColor = 'var(--color-primary)';
-            
-            document.getElementById('btn-task-cancel').classList.add('hidden');
         },
 
         toggle(index) {
@@ -1888,31 +1816,25 @@
         },
         
         delete(index) {
-            if(confirm("Excluir tarefa?")) {
-                if (this.editingIndex === index) this.cancelEdit(); // Cancela edição se deletar a que está sendo editada
-                DB.state.tasks.splice(index, 1);
-                DB.save();
-            }
+            DB.state.tasks.splice(index, 1);
+            DB.save();
         },
 
         exportToCalendar(index) {
             const t = DB.state.tasks[index];
-            if (!t.date || !t.time) return alert("Defina Data e Hora para agendar!");
-            
+            if (!t.date || !t.time) return alert("Defina Data e Hora!");
             const start = t.date.replace(/-/g, '') + 'T' + t.time.replace(/:/g, '') + '00';
-            
             const icsContent = [
                 'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
                 `DTSTART:${start}`, `DTEND:${start}`,
-                `SUMMARY:Caverna: ${t.desc}`, `DESCRIPTION:Prioridade: ${t.prio}`,
-                'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Lembrete', 'END:VALARM',
+                `SUMMARY:Caverna: ${t.desc}`, `DESCRIPTION:Prio: ${t.prio}`,
+                'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Reminder', 'END:VALARM',
                 'END:VEVENT', 'END:VCALENDAR'
             ].join('\n');
-            
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             const link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
-            link.setAttribute('download', `tarefa_${index}.ics`);
+            link.setAttribute('download', 'tarefa.ics');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1925,8 +1847,7 @@
             if(!list) return;
             list.innerHTML = '';
             
-            // Ordenação
-            const sortedTasks = [...DB.state.tasks].map((t, i) => ({...t, originalIndex: i})).sort((a, b) => {
+            const sortedTasks = [...DB.state.tasks].sort((a, b) => {
                 const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
                 if (pWeight[b.prio] !== pWeight[a.prio]) return pWeight[b.prio] - pWeight[a.prio];
                 if (a.time && !b.time) return -1;
@@ -1935,25 +1856,22 @@
                 return 0;
             });
 
-            let hasTask = false;
-
             sortedTasks.forEach((t) => {
+                const originalIndex = DB.state.tasks.indexOf(t);
                 const tarefaFreq = t.freq || 'Geral';
                 if (filter !== 'all' && tarefaFreq !== filter) return;
-                
-                hasTask = true;
+
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                 const doneStyle = t.done ? 'text-decoration: line-through; opacity: 0.5;' : '';
                 const icon = t.done ? 'fa-check-square' : 'fa-square';
                 const timeHTML = t.time ? `<i class="far fa-clock" style="margin-right:4px;"></i>${t.time}` : '';
-                
                 const calendarBtn = (t.date && t.time && !t.done) 
-                    ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${t.originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
+                    ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
                     : '';
 
                 list.innerHTML += `
                     <div class="task-item fade-in">
-                        <div style="display:flex; align-items:center; cursor:pointer; flex:1; padding-right:10px;" onclick="TaskModule.toggle(${t.originalIndex})">
+                        <div style="display:flex; align-items:center; cursor:pointer; flex:1; padding-right:10px;" onclick="TaskModule.toggle(${originalIndex})">
                             <i class="far ${icon}" style="margin-right:12px; color:var(--color-primary); font-size:1.4rem;"></i>
                             <div style="width: 100%;">
                                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
@@ -1970,15 +1888,15 @@
                             
                             <div class="task-actions-row">
                                 ${calendarBtn}
-                                <i class="fas fa-pen" onclick="TaskModule.edit(${t.originalIndex})" style="cursor:pointer; color:#888; font-size:1rem;" title="Editar"></i>
-                                <i class="fas fa-trash" onclick="TaskModule.delete(${t.originalIndex})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                                <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:1rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            if(!hasTask) list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
         }
     };
 
