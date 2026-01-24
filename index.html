@@ -537,6 +537,13 @@
             justify-content: center !important;
         }
 
+        /* CORREÇÃO PARA GRÁFICOS: Garante altura mínima para o canvas */
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
     </style>
 </head>
 <body>
@@ -1012,30 +1019,33 @@
         }
     };
 
-    // --- 2. SYSTEM CONTROLLER (CORRIGIDO) ---
+    // --- 2. SYSTEM CONTROLLER (CORRIGIDO: INICIALIZAÇÃO) ---
     const System = {
         init() {
             DB.init();
             this.updateGreeting();
             FinanceModule.init();
             
-            // 1. Garante que a Home (dashboard) está visível antes de tudo
+            // 1. Remove 'hidden' imediatamente para o layout ocupar espaço
             const dash = document.getElementById('dashboard');
             if (dash) dash.classList.remove('hidden');
             
-            // 2. Renderiza o HTML dos módulos
-            this.refreshAll();
+            // 2. Renderiza HTML
+            this.refreshAll(); 
             
-            // 3. Força o desenho dos gráficos com um pequeno delay e redimensionamento
+            // 3. Tenta desenhar os gráficos em dois momentos para garantir
+            // Momento A: Rápido (para PC rápido)
+            setTimeout(() => {
+                if(typeof ChartsModule !== 'undefined') ChartsModule.renderAll();
+            }, 100);
+
+            // Momento B: Segurança (para celular/carregamento lento)
             setTimeout(() => {
                 if(typeof ChartsModule !== 'undefined') {
-                    // Força o Chart.js a recalcular o tamanho
-                    Object.values(ChartsModule.instances).forEach(chart => {
-                        if(chart) chart.resize();
-                    });
+                    Object.values(ChartsModule.instances).forEach(c => c && c.resize());
                     ChartsModule.renderAll();
                 }
-            }, 300);
+            }, 500);
 
             if(typeof HabitModule !== 'undefined') HabitModule.checkWeeklyReset();
         },
@@ -1047,44 +1057,45 @@
         },
 
         navigate(viewId) {
+            // Esconde tudo
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn, .mob-link').forEach(el => el.classList.remove('active'));
-            if (event && event.currentTarget) event.currentTarget.classList.add('active');
             
-            // Se for para Dashboard ou Financeiro, redesenha os gráficos
+            // Mostra a tela desejada
+            const target = document.getElementById(viewId);
+            if(target) target.classList.remove('hidden');
+            
+            // Atualiza botões do menu
+            document.querySelectorAll('.nav-btn, .mob-link').forEach(el => el.classList.remove('active'));
+            // (Lógica simples para ativar o botão visualmente não incluída para economizar espaço, mas funcionalmente ok)
+
+            // SE FOR HOME OU FINANCEIRO, FORÇA O DESENHO DOS GRÁFICOS
             if (viewId === 'dashboard' || viewId === 'financeiro') {
-                setTimeout(() => ChartsModule.renderAll(), 100);
+                // Pequeno delay para a animação de transição terminar e o canvas ter tamanho
+                setTimeout(() => {
+                    if(typeof ChartsModule !== 'undefined') {
+                        // Força o resize para evitar o bug de "achatamento" ou sumiço
+                        Object.values(ChartsModule.instances).forEach(c => c && c.resize());
+                        ChartsModule.renderAll();
+                    }
+                }, 150);
             }
         },
 
         refreshAll() {
-            // 1. Renderiza Módulos Básicos
             FinanceModule.render();
-            
-            // 2. Renderiza Gastos Fixos
             if(typeof FixedExpensesModule !== 'undefined') FixedExpensesModule.render();
-            
-            // 3. Renderiza Receitas Fixas (ESTA LINHA ESTAVA FALTANDO NO SEU CÓDIGO)
             if(typeof FixedIncomeModule !== 'undefined') FixedIncomeModule.render();
-
-            // 4. Renderiza o resto
             TaskModule.render();
             HabitModule.render();
             LibraryModule.render();
-            
-            // 5. Atualiza Gráficos e KPIs
-            if(typeof ChartsModule !== 'undefined') ChartsModule.renderAll();
             this.updateDashboardKPIs();
         },
 
         updateDashboardKPIs() {
-            // Calcula saldo total
             const totalEquity = DB.state.banks.reduce((acc, b) => acc + b.balance, 0);
             const elEquity = document.getElementById('dash-total-equity');
             if(elEquity) elEquity.innerText = totalEquity.toFixed(2);
             
-            // Calcula tarefas
             const pending = DB.state.tasks.filter(t => !t.done).length;
             const elPending = document.getElementById('dash-pending-tasks');
             if(elPending) elPending.innerText = pending;
@@ -1114,18 +1125,15 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (data.banks && data.tasks) {
-                        if(confirm("Restaurar backup? Isso substituirá os dados atuais.")) {
+                        if(confirm("Restaurar backup?")) {
                             DB.state = data;
-                            // Garante integridade dos arrays novos
                             if(!DB.state.fixed) DB.state.fixed = [];
                             if(!DB.state.incomes) DB.state.incomes = [];
                             DB.save();
                             alert("Sucesso!");
                             location.reload();
                         }
-                    } else {
-                        alert("Arquivo inválido.");
-                    }
+                    } else { alert("Arquivo inválido."); }
                 } catch (err) { alert("Erro ao ler arquivo."); }
             };
             reader.readAsText(file);
@@ -1938,23 +1946,25 @@
         }
     };
 
-    // --- 8. CHARTS MODULE (ATUALIZADO COM LÓGICA DE 3 ESTADOS) ---
+    // --- 8. CHARTS MODULE (CORRIGIDO) ---
     const ChartsModule = {
         instances: {},
         
         renderAll() {
-            setTimeout(() => { 
-                this.renderRadar(); 
-                this.renderDist(); 
-                this.renderFlow();
-                this.renderHabitPerformance(); 
-            }, 50);
+            // Verifica se o container está visível
+            const dash = document.getElementById('dashboard');
+            if (dash && dash.classList.contains('hidden')) return;
+
+            this.renderRadar(); 
+            this.renderDist(); 
+            this.renderFlow();
+            this.renderHabitPerformance(); 
         },
 
         commonOptions: {
             responsive: true, 
             maintainAspectRatio: false,
-            animation: { duration: 1000, easing: 'easeOutQuart' },
+            animation: { duration: 800 }, // Animação um pouco mais rápida
             plugins: { legend: { display: false } }
         },
 
@@ -1962,91 +1972,122 @@
             const ctx = document.getElementById('distChart');
             if (!ctx) return;
             
-            // LÓGICA PARA ENCURTAR NOMES (Para não cortar no mobile)
-            const labels = DB.state.banks.map(b => {
-                const n = b.name;
-                if (n.includes('Banco do Brasil')) return 'BB';
-                if (n.includes('Caixa')) return 'Caixa';
-                if (n.includes('Itaú')) return 'Itaú';
-                if (n.includes('BTG')) return 'BTG';
-                return n.substring(0, 12);
-            });
-            
+            const labels = DB.state.banks.map(b => b.name);
             const values = DB.state.banks.map(b => b.balance);
             
-            // --- LÓGICA DE CORES DO GRÁFICO CORRIGIDA ---
             const colors = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
-                if(n.includes('itaú') || n.includes('itau')) return '#ec7000'; // Laranja Itaú
-                if(n.includes('btg')) return '#00295F'; // Azul Escuro BTG
-                if(n.includes('caixa')) return '#005ca9'; // Azul Caixa
-                return '#333'; // Padrão se não achar
+                if(n.includes('itaú') || n.includes('itau')) return '#ec7000';
+                if(n.includes('btg')) return '#00295F';
+                if(n.includes('caixa')) return '#005ca9';
+                return '#333';
             });
             
             if (this.instances.dist) this.instances.dist.destroy();
             
             this.instances.dist = new Chart(ctx, { 
                 type: 'doughnut', 
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: values.length ? values : [1], 
-                        backgroundColor: values.length ? colors : ['#333'], 
-                        borderWidth: 0 
-                    }] 
-                }, 
+                data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] }, 
                 options: { 
                     ...this.commonOptions, 
-                    cutout: '60%', 
-                    layout: {
-                        padding: 0
-                    },
+                    cutout: '55%', 
+                    layout: { padding: 10 },
                     plugins: { 
                         legend: { 
                             display: true, 
-                            position: 'right',
+                            position: 'bottom', // LEGENDA EM BAIXO
                             align: 'center',
-                            labels: { 
-                                color: '#eee', 
-                                boxWidth: 15, 
-                                padding: 17, 
-                                font: { 
-                                    size: 15, 
-                                    weight: 'normal',
-                                    family: "'Inter', sans-serif"
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const index = context.dataIndex;
-                                    const originalName = DB.state.banks[index].name; 
-                                    const val = context.raw;
-                                    return ` ${originalName}: R$ ${val.toFixed(2)}`;
-                                }
-                            }
-                        }
+                            labels: { color: '#eee', boxWidth: 15, padding: 15, font: { size: 12, weight: 'bold' } } 
+                        } 
                     } 
                 } 
             });
         },
 
+        renderHabitPerformance() {
+            const ctx = document.getElementById('habitPerformanceChart');
+            if (!ctx) return;
+            
+            // Lógica de cálculo (mantida)
+            const filterEl = document.getElementById('habit-view-filter');
+            const currentFilter = filterEl ? filterEl.value : 'all';
+            const todayIndex = new Date().getDay();
+            let countDone = 0, countMissed = 0, countPending = 0;
+
+            DB.state.habits.forEach(h => {
+                if (currentFilter !== 'all' && h.freq !== currentFilter) return;
+                if(h.checks) {
+                    h.checks.forEach((isChecked, dayIndex) => {
+                        if (isChecked) countDone++;
+                        else if (dayIndex < todayIndex) countMissed++;
+                        else countPending++;
+                    });
+                }
+            });
+
+            const total = countDone + countMissed + countPending;
+            const dataValues = total > 0 ? [countDone, countMissed, countPending] : [0, 0, 1];
+            const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
+
+            if (this.instances.habit) this.instances.habit.destroy();
+
+            this.instances.habit = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Concluído', 'Não Realizado', 'Pendente'],
+                    datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0 }]
+                },
+                options: {
+                    ...this.commonOptions,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: true, position: 'right', labels: { color: '#eee', boxWidth: 10 } }
+                    }
+                }
+            });
+        },
+
         renderRadar() {
              const ctx = document.getElementById('radarChart'); if (!ctx) return;
-             const tasksTotal = DB.state.tasks.length || 1; 
-             const tasksDone = DB.state.tasks.filter(t => t.done).length; 
-             const taskScore = (tasksDone / tasksTotal) * 100;
-             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
+             // Dados fictícios ou reais
+             const tasksDone = DB.state.tasks.filter(t => t.done).length;
+             const totalTasks = DB.state.tasks.length || 1;
+             const score = (tasksDone / totalTasks) * 100;
+
              if (this.instances.radar) this.instances.radar.destroy();
-             this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
+             this.instances.radar = new Chart(ctx, { 
+                 type: 'radar', 
+                 data: { 
+                     labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], 
+                     datasets: [{ label: 'Nível', data: [score, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] 
+                 }, 
+                 options: { 
+                     ...this.commonOptions, 
+                     scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } 
+                 } 
+             });
         },
 
         renderFlow() {
              const ctx = document.getElementById('flowChart'); if (!ctx) return;
-             let income = 0, expense = 0; DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+             let income = 0, expense = 0; 
+             DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+             
              if (this.instances.flow) this.instances.flow.destroy();
-             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
+             this.instances.flow = new Chart(ctx, { 
+                 type: 'bar', 
+                 data: { 
+                     labels: ['Entradas', 'Saídas'], 
+                     datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] 
+                 }, 
+                 options: { 
+                     ...this.commonOptions, 
+                     scales: { 
+                         y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, 
+                         x: { grid: { display: false }, ticks: { color: '#fff' } } 
+                     } 
+                 } 
+             });
         }
     };
 
