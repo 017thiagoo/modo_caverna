@@ -2286,7 +2286,6 @@
         },
 
         // Função auxiliar para desenhar o gráfico Doughnut (Reutilizável)
-        // Função auxiliar para desenhar o gráfico Doughnut (Reutilizável)
         renderDoughnut(ctx, instanceName, done, missed, pending) {
             const total = done + missed + pending;
             const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
@@ -2307,23 +2306,14 @@
                 },
                 options: {
                     ...this.commonOptions,
-                    cutout: '65%', // Diminuí um pouco o buraco para caber melhor
-                    layout: { padding: 10 },
+                    cutout: '70%',
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom', // <--- AQUI: Move para baixo
+                            position: 'right',
                             align: 'center',
-                            labels: { 
-                                color: '#eee', 
-                                boxWidth: 12, 
-                                padding: 15, 
-                                font: { 
-                                    size: 15, // <--- AQUI: Aumenta o tamanho da letra
-                                    family: "'Inter', sans-serif",
-                                    weight: 'normal' // Deixei um pouco mais grosso para ler melhor
-                                } 
-                            }
+                            labels: { color: '#eee', boxWidth: 12, padding: 10, font: { size: 12, family: "'Inter', sans-serif" } }
                         }
                     }
                 }
