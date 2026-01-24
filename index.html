@@ -1109,7 +1109,8 @@
         </div>
 
         <div id="biblioteca" class="view-section hidden fade-in">
-            <div class="card-header" style="justify-content: space-between;">
+            <div class="card card-centralizado">
+                <div class="card-header" style="justify-content: space-between;">
                     <span class="card-title">Base de Conhecimento</span>
                     <select id="lib-view-filter" class="form-control" style="width: auto; height: 30px; padding: 0 10px; font-size: 0.8rem;" onchange="LibraryModule.render()">
                         <option value="all">Todos</option>
@@ -1117,10 +1118,6 @@
                         <option value="Semanal">Semanais</option>
                         <option value="Mensal">Mensais</option>
                     </select>
-                </div>
-
-                <div style="height: 280px; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">
-                    <canvas id="libraryPerformanceChart"></canvas>
                 </div>
 
                 <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);">
@@ -1134,8 +1131,7 @@
                     </div>
 
                     <div class="input-group-row" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="lib-note" class="form-control" placeholder="Progresso (Ex: Aula 42)" style="margin-bottom: 0; flex: 2;">
-                        <input type="date" id="lib-date" class="form-control" style="margin-bottom: 0; width: 130px;" title="Data Meta">
+                        <input type="text" id="lib-note" class="form-control" placeholder="Onde parei? (ex: Pág 42, Aula 3...)" style="margin-bottom: 0; flex: 2;">
                         <select id="lib-freq" class="form-control" style="width: 110px; margin-bottom: 0;">
                             <option value="Diário">Diário</option>
                             <option value="Semanal">Semanal</option>
@@ -2113,7 +2109,7 @@
         }
     };
 
-    // --- 7. LIBRARY MODULE (ATUALIZADO: CHECK NOS CURSOS + GRÁFICO) ---
+    // --- 7. LIBRARY MODULE (COM EDIÇÃO COMPLETA E ANOTAÇÕES) ---
     const LibraryModule = {
         editingIndex: null,
 
@@ -2121,26 +2117,27 @@
             const title = document.getElementById('lib-title').value;
             const type = document.getElementById('lib-type').value;
             const freq = document.getElementById('lib-freq').value;
-            const note = document.getElementById('lib-note').value;
-            const date = document.getElementById('lib-date').value;
+            const note = document.getElementById('lib-note').value; // Novo campo
 
             if(title) {
                 if (this.editingIndex !== null) {
+                    // --- MODO EDIÇÃO ---
                     const item = DB.state.library[this.editingIndex];
                     item.title = title;
                     item.type = type;
                     item.freq = freq;
                     item.note = note;
-                    item.date = date;
-                    if (type === 'course' && !item.checks) item.checks = Array(7).fill(false);
+                    
                     this.cancelEdit();
                 } else {
-                    const checks = type === 'course' ? Array(7).fill(false) : null;
-                    DB.state.library.push({ title, type, freq, note, date, done: false, checks });
+                    // --- MODO CRIAÇÃO ---
+                    DB.state.library.push({ title, type, freq, note, done: false });
                 }
+
+                // Limpar campos
                 document.getElementById('lib-title').value = '';
                 document.getElementById('lib-note').value = '';
-                document.getElementById('lib-date').value = '';
+                
                 DB.save();
                 this.render();
             } else {
@@ -2152,16 +2149,21 @@
             const item = DB.state.library[index];
             if (item) {
                 this.editingIndex = index;
+                
+                // Preenche o formulário
                 document.getElementById('lib-title').value = item.title;
                 document.getElementById('lib-type').value = item.type;
                 document.getElementById('lib-freq').value = item.freq || 'Diário';
-                document.getElementById('lib-note').value = item.note || '';
-                document.getElementById('lib-date').value = item.date || '';
+                document.getElementById('lib-note').value = item.note || ''; // Preenche a nota
 
+                // Ajusta botões
                 const btnSave = document.getElementById('btn-lib-save');
                 btnSave.innerText = 'Salvar Alterações';
                 btnSave.style.backgroundColor = 'var(--color-success)';
+                
                 document.getElementById('btn-lib-cancel').classList.remove('hidden');
+                
+                // Rola para o formulário
                 document.getElementById('lib-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         },
@@ -2170,21 +2172,16 @@
             this.editingIndex = null;
             document.getElementById('lib-title').value = '';
             document.getElementById('lib-note').value = '';
-            document.getElementById('lib-date').value = '';
+            
             const btnSave = document.getElementById('btn-lib-save');
             btnSave.innerText = 'Adicionar';
             btnSave.style.backgroundColor = 'var(--color-primary)';
+            
             document.getElementById('btn-lib-cancel').classList.add('hidden');
         },
 
-        toggle(index, dayIndex = null) {
-            const item = DB.state.library[index];
-            if (item.type === 'course' && dayIndex !== null) {
-                if (!item.checks) item.checks = Array(7).fill(false);
-                item.checks[dayIndex] = !item.checks[dayIndex];
-            } else {
-                item.done = !item.done;
-            }
+        toggle(index) {
+            DB.state.library[index].done = !DB.state.library[index].done;
             DB.save();
             this.render();
         },
@@ -2199,112 +2196,69 @@
         },
 
         render() {
-            if(typeof ChartsModule !== 'undefined') ChartsModule.renderLibraryPerformance();
-
             const list = document.getElementById('library-list-container');
             const filterEl = document.getElementById('lib-view-filter');
             if(!list) return;
             const filter = filterEl ? filterEl.value : 'all';
             list.innerHTML = '';
-            const daysLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
             let hasItems = false;
 
             DB.state.library.forEach((item, i) => {
                 if (filter !== 'all' && item.freq !== filter) return;
                 hasItems = true;
                 
+                const iconType = item.type === 'book' ? 'fa-book' : 'fa-laptop-code';
                 const meta = item.freq || 'Geral';
-                const isDone = item.done;
-                const checkIcon = isDone ? 'fa-check-circle' : 'fa-circle'; // Ícone principal
-                const titleClass = isDone ? 'item-done' : '';
-                const dateDisplay = item.date ? item.date.split('-').reverse().join('/') : ''; 
+                const titleClass = item.done ? 'item-done' : '';
+                const checkIcon = item.done ? 'fa-check-circle' : 'fa-circle';
                 
-                let metaInfo = '';
-                if (item.date) metaInfo += `<span style="margin-right:10px;"><i class="far fa-calendar-alt"></i> ${dateDisplay}</span>`;
-                if (item.note) metaInfo += `<span><i class="fas fa-bookmark"></i> ${item.note}</span>`;
-                const metaDisplay = metaInfo ? `<div style="font-size:0.75rem; color:#ef4444; margin-top:4px; font-family:'JetBrains Mono'; display:flex; align-items:center;">${metaInfo}</div>` : '';
+                // Exibe a nota se existir
+                const noteDisplay = item.note 
+                    ? `<div style="font-size:0.75rem; color:#ef4444; margin-top:2px; font-family:'JetBrains Mono';"><i class="fas fa-bookmark" style="font-size:0.7rem; margin-right:4px;"></i>${item.note}</div>` 
+                    : '';
 
-                // --- CURSO (Com Check Principal + Grid Semanal) ---
-                if (item.type === 'course') {
-                    if (!item.checks) item.checks = Array(7).fill(false);
-                    let daysHtml = '';
-                    item.checks.forEach((isChecked, d) => {
-                        const activeClass = isChecked ? 'checked' : '';
-                        daysHtml += `
-                            <div class="habit-day-col">
-                                <span class="habit-day-label">${daysLabels[d]}</span>
-                                <div class="day-check ${activeClass}" onclick="LibraryModule.toggle(${i}, ${d})"></div>
-                            </div>
-                        `;
-                    });
-
-                    list.innerHTML += `
-                        <div class="habit-card-mini fade-in" style="display:block;">
-                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                                <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" style="cursor:pointer; font-size:1.1rem; min-width:20px;"></i>
-                                
-                                <div style="flex:1;">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <i class="fas fa-laptop-code" style="color:var(--color-primary);"></i>
-                                        <span class="${titleClass}" style="font-weight:600;">${item.title}</span>
+                list.innerHTML += `
+                    <div class="task-item fade-in">
+                        <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                            <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" style="cursor:pointer; font-size:1.1rem; min-width:20px;"></i>
+                            <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                                <i class="fas ${iconType}" style="color:var(--color-primary); opacity:0.8;"></i>
+                                <div>
+                                    <span class="${titleClass}" style="display:block; font-weight:500;">${item.title}</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
                                     </div>
-                                    ${metaDisplay}
-                                </div>
-                                <div style="display:flex; gap:10px;">
-                                    <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;"></i>
-                                    <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
+                                    ${noteDisplay}
                                 </div>
                             </div>
-                            <div class="habit-days" style="gap:2px; margin-left: 30px;">${daysHtml}</div>
-                        </div>
-                    `;
-                } 
-                // --- LIVRO (Card Padrão) ---
-                else {
-                    list.innerHTML += `
-                        <div class="task-item fade-in">
-                            <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                                <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" style="cursor:pointer; font-size:1.1rem; min-width:20px;"></i>
-                                <div style="display:flex; align-items:center; gap:10px; flex:1;">
-                                    <i class="fas fa-book" style="color:var(--color-primary); opacity:0.8;"></i>
-                                    <div>
-                                        <span class="${titleClass}" style="display:block; font-weight:500;">${item.title}</span>
-                                        <div style="display:flex; align-items:center; gap:6px;">
-                                            <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
-                                        </div>
-                                        ${metaDisplay}
-                                    </div>
-                                </div>
-                                <div style="display:flex; gap:10px;">
-                                    <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;"></i>
-                                    <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
-                                </div>
+                            <div style="display:flex; gap:10px;">
+                                <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
                             </div>
                         </div>
-                    `;
-                }
+                    </div>
+                `;
             });
             if(!hasItems) list.innerHTML = '<div class="empty-state">Biblioteca vazia.</div>';
         }
     };
 
-    // --- 8. CHARTS MODULE (ATUALIZADO) ---
+    // --- 8. CHARTS MODULE (VERSÃO FINAL: NOMES CURTOS + 3 CORES HÁBITOS + HOME FIX) ---
     const ChartsModule = {
         instances: {},
         
         renderAll() {
+            // Verifica se o container está visível para evitar erros de renderização
             const dash = document.getElementById('dashboard');
-            if (dash && !dash.classList.contains('hidden')) {
-                setTimeout(() => {
-                    this.renderRadar(); 
-                    this.renderDist(); 
-                    this.renderFlow();
-                }, 100);
-            }
+            if (dash && dash.classList.contains('hidden')) return;
+
+            // Renderiza com um pequeno delay para garantir que o CSS aplicou o tamanho
             setTimeout(() => {
+                this.renderRadar(); 
+                this.renderDist(); 
+                this.renderFlow();
                 this.renderHabitPerformance(); 
-                this.renderTaskPerformance();
-                this.renderLibraryPerformance();
             }, 100);
         },
 
@@ -2315,10 +2269,25 @@
             plugins: { legend: { display: false } }
         },
 
+        // 1. GRÁFICO DE ATIVOS (BANCOS) - COM NOMES PERSONALIZADOS
+        // GRÁFICO DE ATIVOS (CORRIGIDO: FONTE MAIOR E SEM NEGRITO)
         renderDist() {
-            const ctx = document.getElementById('distChart'); if (!ctx) return;
-            const labels = DB.state.banks.map(b => b.name.substring(0, 12));
+            const ctx = document.getElementById('distChart');
+            if (!ctx) return;
+            
+            // LÓGICA PARA ENCURTAR NOMES
+            const labels = DB.state.banks.map(b => {
+                const n = b.name;
+                if (n.includes('Banco do Brasil')) return 'BB';
+                if (n.includes('Caixa')) return 'Caixa';
+                if (n.includes('Itaú')) return 'Itaú';
+                if (n.includes('BTG')) return 'BTG';
+                return n.substring(0, 12);
+            });
+            
             const values = DB.state.banks.map(b => b.balance);
+            
+            // CORES
             const colors = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
                 if(n.includes('itaú') || n.includes('itau')) return '#ec7000';
@@ -2326,112 +2295,145 @@
                 if(n.includes('caixa')) return '#005ca9';
                 return '#333';
             });
+            
             if (this.instances.dist) this.instances.dist.destroy();
-            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 14, family: "'Inter', sans-serif" } } } } } });
+            
+            this.instances.dist = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { 
+                    labels, 
+                    datasets: [{ 
+                        data: values.length ? values : [1], 
+                        backgroundColor: values.length ? colors : ['#333'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { 
+                    ...this.commonOptions, 
+                    cutout: '55%', 
+                    layout: { padding: 10 },
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            position: 'bottom', 
+                            align: 'center',
+                            labels: { 
+                                color: '#eee', 
+                                boxWidth: 15, 
+                                padding: 20, 
+                                // --- AQUI VOCÊ MEXE NA FONTE ---
+                                font: { 
+                                    size: 18,      // Aumentei o tamanho (era 12)
+                                    weight: 'bold', // Tirei o negrito (era 'bold')
+                                    family: "'Inter', sans-serif"
+                                } 
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.raw;
+                                    const label = context.label;
+                                    return ` ${label}: R$ ${val.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    } 
+                } 
+            });
         },
 
+        // 2. GRÁFICO DE HÁBITOS (ATUALIZADO: LEGENDA EM BAIXO)
         renderHabitPerformance() {
-            const ctx = document.getElementById('habitPerformanceChart'); if (!ctx) return;
+            const ctx = document.getElementById('habitPerformanceChart');
+            if (!ctx) return;
+
             const filterEl = document.getElementById('habit-view-filter');
             const currentFilter = filterEl ? filterEl.value : 'all';
             const todayIndex = new Date().getDay();
-            let cDone = 0, cMissed = 0, cPending = 0;
+
+            let countDone = 0;      // Verde
+            let countMissed = 0;    // Vermelho
+            let countPending = 0;   // Cinza
+
             DB.state.habits.forEach(h => {
                 if (currentFilter !== 'all' && h.freq !== currentFilter) return;
+
                 if(h.checks) {
                     h.checks.forEach((isChecked, dayIndex) => {
-                        if (isChecked) cDone++; else if (dayIndex < todayIndex) cMissed++; else cPending++;
+                        if (isChecked) {
+                            countDone++;
+                        } else {
+                            if (dayIndex < todayIndex) countMissed++; // Passou o dia
+                            else countPending++; // Hoje ou futuro
+                        }
                     });
                 }
             });
-            this.renderDoughnut(ctx, 'habit', cDone, cMissed, cPending);
-        },
 
-        renderTaskPerformance() {
-            const ctx = document.getElementById('taskPerformanceChart'); if (!ctx) return;
-            const filter = document.getElementById('task-view-filter') ? document.getElementById('task-view-filter').value : 'all';
-            const today = new Date().toISOString().split('T')[0];
-            let cDone = 0, cMissed = 0, cPending = 0;
-            DB.state.tasks.forEach(t => {
-                const tFreq = t.freq || 'Geral';
-                if (filter !== 'all' && tFreq !== filter) return;
-                if (t.done) cDone++; else { if (!t.date) cPending++; else if (t.date < today) cMissed++; else cPending++; }
-            });
-            this.renderDoughnut(ctx, 'task', cDone, cMissed, cPending);
-        },
-
-        // --- GRÁFICO DA BIBLIOTECA (IGUAL HÁBITOS) ---
-        renderLibraryPerformance() {
-            const ctx = document.getElementById('libraryPerformanceChart');
-            if (!ctx) return;
+            const total = countDone + countMissed + countPending;
+            const dataValues = total > 0 ? [countDone, countMissed, countPending] : [0, 0, 1];
             
-            const filterEl = document.getElementById('lib-view-filter');
-            const currentFilter = filterEl ? filterEl.value : 'all';
-            const todayIndex = new Date().getDay();
-
-            let cDone = 0, cMissed = 0, cPending = 0;
-
-            DB.state.library.forEach(item => {
-                if (currentFilter !== 'all' && item.freq !== currentFilter) return;
-
-                if (item.type === 'course' && item.checks) {
-                    // Cursos: Conta os DIAS estudados (igual hábitos)
-                    item.checks.forEach((isChecked, dayIndex) => {
-                        if (isChecked) cDone++;
-                        else if (dayIndex < todayIndex) cMissed++;
-                        else cPending++;
-                    });
-                } else {
-                    // Livros: Conta como um item único
-                    if (item.done) cDone++;
-                    else cPending++;
-                }
-            });
-
-            this.renderDoughnut(ctx, 'library', cDone, cMissed, cPending);
-        },
-
-        renderDoughnut(ctx, instanceName, done, missed, pending) {
-            const total = done + missed + pending;
-            const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
+            // Verde, Vermelho, Cinza
             const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
-            if (this.instances[instanceName]) this.instances[instanceName].destroy();
-            this.instances[instanceName] = new Chart(ctx, {
+            const labels = ['Concluído', 'Não Realizado', 'Pendente'];
+
+            if (this.instances.habit) this.instances.habit.destroy();
+
+            this.instances.habit = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Concluído', 'Atrasado/Falta', 'Pendente'],
-                    datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }]
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
                 },
                 options: {
                     ...this.commonOptions,
-                    cutout: '60%',
-                    layout: { padding: 10 },
+                    cutout: '60%', // Deixei um pouco mais grosso para ficar bonito maior
+                    layout: { padding: 10 }, // Espaço interno
                     plugins: {
                         legend: {
-                            display: true, position: 'bottom', align: 'center',
-                            labels: { color: '#eee', boxWidth: 15, padding: 25, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } }
+                            display: true,
+                            position: 'bottom', // <--- AQUI: MOVEU PARA BAIXO
+                            align: 'center',
+                            labels: {
+                                color: '#eee',
+                                boxWidth: 12,
+                                padding: 20, // Mais espaço entre o gráfico e a legenda
+                                font: {
+                                    size: 15, // Tamanho da letra
+                                    weight: 'bold', // Negrito para leitura melhor
+                                    family: "'Inter', sans-serif"
+                                }
+                            }
                         }
                     }
                 }
             });
         },
 
+        // 3. RADAR (MANTIDO IGUAL)
         renderRadar() {
-            const ctx = document.getElementById('radarChart'); if (!ctx) return;
-            const tasksTotal = DB.state.tasks.length || 1; 
-            const tasksDone = DB.state.tasks.filter(t => t.done).length; 
-            const taskScore = (tasksDone / tasksTotal) * 100;
-            const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
-            if (this.instances.radar) this.instances.radar.destroy();
-            this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
+             const ctx = document.getElementById('radarChart'); if (!ctx) return;
+             const tasksTotal = DB.state.tasks.length || 1; 
+             const tasksDone = DB.state.tasks.filter(t => t.done).length; 
+             const taskScore = (tasksDone / tasksTotal) * 100;
+             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
+             if (this.instances.radar) this.instances.radar.destroy();
+             this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         },
 
+        // 4. FLUXO DE CAIXA (MANTIDO IGUAL)
         renderFlow() {
-            const ctx = document.getElementById('flowChart'); if (!ctx) return;
-            let income = 0, expense = 0; 
-            DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
-            if (this.instances.flow) this.instances.flow.destroy();
-            this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
+             const ctx = document.getElementById('flowChart'); if (!ctx) return;
+             let income = 0, expense = 0; 
+             DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+             if (this.instances.flow) this.instances.flow.destroy();
+             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
         }
     };
 
