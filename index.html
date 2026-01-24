@@ -2211,85 +2211,56 @@
                 if (filter !== 'all' && item.freq !== filter) return;
                 hasItems = true;
                 
+                // Define ícone baseado no tipo
+                const iconType = item.type === 'book' ? 'fa-book' : 'fa-laptop-code'; // Livro ou Laptop
                 const meta = item.freq || 'Geral';
                 const isDone = item.done;
-                // Formata data para BR se existir
+                
+                // Formata a data se existir
                 const dateDisplay = item.date ? item.date.split('-').reverse().join('/') : ''; 
 
-                // --- VISUAL TIPO CURSO (TABELA/PLANILHA) ---
-                if (item.type === 'course') {
-                    const checkClass = isDone ? 'checked' : '';
-                    const opacity = isDone ? '0.5' : '1';
-                    
-                    // Monta o texto da célula de anotação
-                    let noteHtml = '-';
-                    if (item.date || item.note) {
-                        noteHtml = `
-                            <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                                ${item.date ? `<span style="font-weight:bold; color:#fff; font-size:0.75rem;">${dateDisplay}</span>` : ''}
-                                ${item.note ? `<span style="color:#ccc; font-size:0.75rem;">${item.note}</span>` : ''}
-                            </div>
-                        `;
-                    }
-                    
-                    list.innerHTML += `
-                        <div class="course-table-row fade-in" style="opacity: ${opacity}">
-                            <div class="course-cell center">
-                                <span style="font-size:0.7rem; color:#888;">${meta}</span>
-                            </div>
-                            <div class="course-cell">
-                                <span class="c-title">${item.title}</span>
-                            </div>
-                            <div class="course-cell">
-                                ${noteHtml}
-                            </div>
-                            <div class="course-cell center">
-                                <div class="table-check ${checkClass}" onclick="LibraryModule.toggle(${i})"></div>
-                            </div>
-                            <div class="course-cell center" style="gap:10px;">
-                                <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.8rem;"></i>
-                                <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:0.8rem;"></i>
-                            </div>
-                        </div>
-                    `;
-                } 
+                const titleClass = isDone ? 'item-done' : '';
+                const checkIcon = isDone ? 'fa-check-circle' : 'fa-circle';
                 
-                // --- VISUAL TIPO LIVRO (CARD PADRÃO) ---
-                else {
-                    const titleClass = isDone ? 'item-done' : '';
-                    const checkIcon = isDone ? 'fa-check-circle' : 'fa-circle';
-                    
-                    let metaInfo = '';
-                    if (item.date) metaInfo += `<span style="margin-right:10px;"><i class="far fa-calendar-alt"></i> ${dateDisplay}</span>`;
-                    if (item.note) metaInfo += `<span><i class="fas fa-bookmark"></i> ${item.note}</span>`;
-                    
-                    const metaDisplay = metaInfo 
-                        ? `<div style="font-size:0.75rem; color:#ef4444; margin-top:4px; font-family:'JetBrains Mono'; display:flex; align-items:center;">${metaInfo}</div>` 
-                        : '';
+                // Monta a linha de meta (Data + Anotação)
+                let metaInfo = '';
+                if (item.date) metaInfo += `<span style="margin-right:10px;"><i class="far fa-calendar-alt"></i> ${dateDisplay}</span>`;
+                if (item.note) metaInfo += `<span><i class="fas fa-bookmark"></i> ${item.note}</span>`;
+                
+                const metaDisplay = metaInfo 
+                    ? `<div style="font-size:0.75rem; color:#ef4444; margin-top:4px; font-family:'JetBrains Mono'; display:flex; align-items:center; flex-wrap: wrap; gap: 8px;">${metaInfo}</div>` 
+                    : '';
 
-                    list.innerHTML += `
-                        <div class="task-item fade-in">
-                            <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                                <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" style="cursor:pointer; font-size:1.1rem; min-width:20px;"></i>
-                                <div style="display:flex; align-items:center; gap:10px; flex:1;">
-                                    <i class="fas fa-book" style="color:var(--color-primary); opacity:0.8;"></i>
-                                    <div>
-                                        <span class="${titleClass}" style="display:block; font-weight:500;">${item.title}</span>
-                                        <div style="display:flex; align-items:center; gap:6px;">
-                                            <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
-                                        </div>
-                                        ${metaDisplay}
+                // HTML ÚNICO PARA AMBOS (Visual de Card)
+                list.innerHTML += `
+                    <div class="task-item fade-in">
+                        <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                            <i class="far ${checkIcon}" onclick="LibraryModule.toggle(${i})" style="cursor:pointer; font-size:1.1rem; min-width:20px;"></i>
+                            
+                            <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                                <i class="fas ${iconType}" style="color:var(--color-primary); opacity:0.8; font-size: 1.1rem;"></i>
+                                
+                                <div>
+                                    <span class="${titleClass}" style="display:block; font-weight:500;">${item.title}</span>
+                                    
+                                    <div style="display:flex; align-items:center; gap:6px; margin-top: 2px;">
+                                        <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
+                                        <span class="cat-badge" style="font-size:0.6rem; background: rgba(255,255,255,0.05);">${item.type === 'book' ? 'Livro' : 'Curso'}</span>
                                     </div>
-                                </div>
-                                <div style="display:flex; gap:10px;">
-                                    <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
-                                    <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
+                                    
+                                    ${metaDisplay}
                                 </div>
                             </div>
+                            
+                            <div style="display:flex; gap:10px;">
+                                <i class="fas fa-pen" onclick="LibraryModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="LibraryModule.delete(${i})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
+                            </div>
                         </div>
-                    `;
-                }
+                    </div>
+                `;
             });
+            
             if(!hasItems) list.innerHTML = '<div class="empty-state">Biblioteca vazia.</div>';
         }
     };
