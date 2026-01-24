@@ -314,28 +314,26 @@
             .card { padding: 1.2rem; }
             .mobile-nav { padding: 10px 20px 10px 20px; height: auto; z-index: 9999; }
 
-            /* 4. PADRONIZAÇÃO DE INPUTS */
+            /* 4. PADRONIZAÇÃO DE INPUTS (Mobile) */
             .input-group-row, 
             #financeiro .input-group-row { 
                 flex-direction: column !important;
-                gap: 0 !important;
+                gap: 10px !important; /* Adicionei gap explícito */
                 margin-bottom: 15px !important;
             }
-
-            /* --- CORREÇÃO DO RELÓGIO/DATA (NOVO) --- */
-            /* Isso garante que fiquem lado a lado sem estourar a tela */
+            
+            /* Ajuste específico para o wrapper de Data/Hora/Botão */
             .date-time-wrapper {
-                display: flex !important;
-                flex-direction: row !important;
+                flex-direction: column !important; /* Força coluna no mobile */
                 gap: 10px !important;
                 width: 100% !important;
-                margin-bottom: 12px !important;
             }
-            
-            .date-time-wrapper input {
-                width: auto !important; 
-                flex: 1 !important; /* Faz dividir o espaço igualmente */
+
+            .date-time-wrapper input,
+            .date-time-wrapper button {
+                width: 100% !important; /* Ocupa largura total */
                 margin-bottom: 0 !important;
+                flex: none !important; /* Remove flexibilidade para garantir tamanho */
             }
 
             /* 5. ESTILO GERAL DOS CAMPOS */
@@ -725,24 +723,25 @@
 
                 <div class="card col-12">
                     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap;">
-                        <span class="card-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span class="card-title" style="white-space: normal; line-height: 1.2; padding-right: 10px; flex-shrink: 1;">
                             <i class="fas fa-hand-holding-usd" style="margin-right:8px; color:var(--color-success)"></i> 
-                            Receitas Fixas Mensais
+                            Receitas Fixas<br>Mensais
                         </span>
-                        <button class="card-action-btn" onclick="FixedIncomeModule.cancelEdit()" style="white-space: nowrap;">
+                        <button class="card-action-btn" onclick="FixedIncomeModule.cancelEdit()" style="white-space: nowrap; flex-shrink: 0;">
                             + Nova / Cancelar
                         </button>
                     </div>
 
                     <div id="inc-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
                         <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição" style="margin-bottom:0; flex:2;">
-                            <input type="number" id="inc-val" class="form-control" placeholder="R$" style="margin-bottom:0; flex:1;">
+                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição (ex: Salário)" style="margin-bottom:0; flex:2;">
+                            <input type="number" id="inc-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
                         </div>
-                        <div class="input-group-row" style="display:flex; gap:10px; align-items: center;">
+                        
+                        <div class="date-time-wrapper" style="display:flex; gap:10px; align-items: center; margin-bottom: 0;">
                             <input type="date" id="inc-date" class="form-control" style="margin-bottom:0; flex: 1;">
                             <button id="btn-save-inc" class="btn-primary" onclick="FixedIncomeModule.save()" style="width: auto; background: var(--color-success); margin-bottom: 0; padding: 0 20px; flex: 1;">
-                                Salvar Conta
+                                Salvar
                             </button>
                         </div>
                     </div>
@@ -773,8 +772,8 @@
                 <div class="card col-12">
                     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap;">
                         <span class="card-title" style="white-space: normal; line-height: 1.2; padding-right: 10px; flex-shrink: 1;">
-                            <i class="fas fa-file-invoice-dollar" style="margin-right:8px; color:var(--color-warning)"></i> 
-                            Gastos Fixos Mensais
+                            <i class="fas fa-file-invoice-dollar" style="margin-right:8px; color:var(--color-danger)"></i> 
+                            Gastos Fixos<br>Mensais
                         </span>
                         <button class="card-action-btn" onclick="FixedExpensesModule.cancelEdit()" style="white-space: nowrap; flex-shrink: 0;">
                             + Nova / Cancelar
