@@ -1219,7 +1219,29 @@
         updateGreeting() {
             const h = new Date().getHours();
             const el = document.getElementById('greeting-text');
-            if(el) el.innerText = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, Engenheiro.`;
+            
+            if(el) {
+                let saudacao = '';
+                
+                // Lógica da Madrugada (00h até 05h)
+                if (h >= 0 && h < 5) {
+                    saudacao = 'Vai dormir';
+                } 
+                // Manhã (05h até 12h)
+                else if (h >= 5 && h < 12) {
+                    saudacao = 'Bom dia';
+                } 
+                // Tarde (12h até 18h)
+                else if (h >= 12 && h < 18) {
+                    saudacao = 'Boa tarde';
+                } 
+                // Noite (18h até 23h59)
+                else {
+                    saudacao = 'Boa noite';
+                }
+
+                el.innerText = `${saudacao}, Engenheiro.`;
+            }
         },
 
         navigate(viewId) {
