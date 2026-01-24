@@ -366,31 +366,17 @@
             will-change: transform; /* Otimiza a animação para a GPU do celular */
         }
 
-        /* --- ESTADO ATIVO (Aba Selecionada) --- */
-        /* O Javascript adiciona a classe .active no botão certo */
+        /* --- ESTADO ATIVO FIXO (QUANDO VOCÊ ESTÁ NA TELA) --- */
         .mob-link.active {
-            color: var(--color-text-main);
+            color: #ffffff !important;
+            font-weight: 600;
         }
 
         .mob-link.active i {
-            color: var(--color-primary);
-            transform: translateY(-8px) scale(1.15); /* Pula para cima e cresce */
-            text-shadow: 0 0 15px rgba(239, 68, 68, 0.6); /* Efeito neon */
-        }
-
-        /* --- ESTADO PRESSIONADO (Dedo na tela) --- */
-        /* Feedback tátil imediato */
-        .mob-link:active i {
-            transform: scale(0.85); /* Encolhe levemente ao tocar */
-            color: var(--color-primary);
-            transition: transform 0.1s; /* Resposta rápida */
-        }
-
-        /* Animação forçada via JS para garantir que funcione */
-        .mob-link.animate-click i {
-            transform: scale(0.8);
-            color: var(--color-primary);
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #ef4444 !important; /* Vermelho fixo */
+            transform: translateY(-6px) scale(1.2) !important; /* Sobe e cresce e FICA LÁ */
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)); /* Brilho constante */
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         /* Trava o efeito elástico da página inteira no iOS */
@@ -1223,27 +1209,33 @@
         },
 
         navigate(viewId) {
-            // Esconde tudo
+            // 1. Esconde todas as telas
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             
-            // Mostra a tela desejada
+            // 2. Mostra a tela desejada
             const target = document.getElementById(viewId);
             if(target) target.classList.remove('hidden');
             
-            // Atualiza botões do menu
+            // 3. ATUALIZA BOTOES (LÓGICA CORRIGIDA)
+            // Primeiro: Tira o vermelho de todos os botões (mobile e desktop)
             document.querySelectorAll('.nav-btn, .mob-link').forEach(el => el.classList.remove('active'));
-            // (Lógica simples para ativar o botão visualmente não incluída para economizar espaço, mas funcionalmente ok)
 
-            // SE FOR HOME OU FINANCEIRO, FORÇA O DESENHO DOS GRÁFICOS
+            // Segundo: Procura qualquer botão que tenha o onclick apontando para a tela atual
+            // O seletor *='...' significa "que contém o texto", garantindo que ache mesmo se tiver espaços
+            const buttonsToActivate = document.querySelectorAll(`[onclick*="'${viewId}'"]`);
+            
+            buttonsToActivate.forEach(btn => {
+                btn.classList.add('active'); // Adiciona a classe que o CSS lá de cima vai pintar de vermelho
+            });
+
+            // 4. Redesenha gráficos (apenas se necessário)
             if (viewId === 'dashboard' || viewId === 'financeiro') {
-                // Pequeno delay para a animação de transição terminar e o canvas ter tamanho
                 setTimeout(() => {
                     if(typeof ChartsModule !== 'undefined') {
-                        // Força o resize para evitar o bug de "achatamento" ou sumiço
                         Object.values(ChartsModule.instances).forEach(c => c && c.resize());
                         ChartsModule.renderAll();
                     }
-                }, 150);
+                }, 100);
             }
         },
 
