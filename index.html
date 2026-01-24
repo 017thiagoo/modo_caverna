@@ -111,17 +111,60 @@
             text-transform: uppercase; letter-spacing: 1.5px; line-height: 1;
         }
 
+        /* --- BLOCO SUBSTITUTO PARA O MENU LATERAL --- */
         .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+        
         .nav-btn {
-            background: transparent; border: none; color: var(--color-text-muted);
-            padding: 14px 16px; text-align: left; cursor: pointer; border-radius: var(--radius-md);
-            font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 14px;
-            transition: 0.3s;
+            background: transparent; 
+            border: none; 
+            color: var(--color-text-muted);
+            padding: 14px 16px; 
+            text-align: left; 
+            cursor: pointer; 
+            border-radius: var(--radius-md);
+            font-size: 0.9rem; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 14px;
+            transition: all 0.3s ease; /* Transição suave para tudo */
+            border-left: 3px solid transparent; /* Borda invisível para não pular layout */
         }
-        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--color-text-main); }
+
+        /* Estilo específico do ÍCONE dentro do botão */
+        .nav-btn i {
+            font-size: 1.1rem;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação elástica */
+            color: #666; /* Cor padrão do ícone */
+            width: 24px;
+            text-align: center;
+        }
+
+        /* --- HOVER (Ao passar o mouse) --- */
+        .nav-btn:hover { 
+            background: rgba(255, 255, 255, 0.04); 
+            color: var(--color-text-main);
+        }
+
+        /* Animação do ícone no hover: Muda cor e move para direita */
+        .nav-btn:hover i {
+            color: var(--color-primary);
+            transform: translateX(4px) scale(1.1); /* Move e aumenta */
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); /* Brilho */
+        }
+
+        /* --- ACTIVE (Botão selecionado) --- */
         .nav-btn.active {
             background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
-            color: var(--color-primary); border-left: 3px solid var(--color-primary);
+            color: var(--color-text-main); 
+            border-left-color: var(--color-primary); /* Borda vermelha */
+        }
+
+        /* Ícone do botão ativo */
+        .nav-btn.active i {
+            color: var(--color-primary);
+            transform: scale(1.1); /* Mantém levemente maior */
+            filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); /* Brilho neon */
         }
 
         /* =========================================
