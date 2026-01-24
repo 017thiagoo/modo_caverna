@@ -1042,9 +1042,14 @@
                         <option value="LOW">Baixa Prioridade</option>
                     </select>
                     
-                    <button class="btn-primary" style="width: 100%; height: 55px; font-size: 1rem; font-weight: 700; background-color: var(--color-primary);" onclick="TaskModule.add()">
-                        Adicionar
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-task-save" class="btn-primary" style="width: 100%; height: 55px; font-size: 1rem; font-weight: 700; background-color: var(--color-primary);" onclick="TaskModule.save()">
+                            Adicionar
+                        </button>
+                        <button id="btn-task-cancel" class="btn-danger hidden" style="width: 100px; height: 55px; font-size: 1rem; font-weight: 700;" onclick="TaskModule.cancelEdit()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="task-list-container"></div>
@@ -1789,9 +1794,12 @@
         }
     };
 
-    // --- 5. TASK MODULE (COM EDIÇÃO) ---
+    // --- 5. TASK MODULE (COM EDIÇÃO COMPLETA) ---
     const TaskModule = {
-        add() {
+        editingIndex: null, // Variável para controlar qual tarefa está sendo editada
+
+        save() {
+            // Pega todos os valores dos inputs
             const desc = document.getElementById('task-input').value;
             const date = document.getElementById('task-date').value;
             const time = document.getElementById('task-time').value;
@@ -1799,23 +1807,75 @@
             const freq = document.getElementById('task-freq').value;
 
             if (desc) {
-                DB.state.tasks.push({ desc, date, time, prio, freq, done: false });
+                if (this.editingIndex !== null) {
+                    // --- MODO EDIÇÃO: Atualiza a tarefa existente ---
+                    const t = DB.state.tasks[this.editingIndex];
+                    t.desc = desc;
+                    t.date = date;
+                    t.time = time;
+                    t.prio = prio;
+                    t.freq = freq;
+                    
+                    // Reseta o estado
+                    this.editingIndex = null;
+                    document.getElementById('btn-task-save').innerText = 'Adicionar';
+                    document.getElementById('btn-task-save').style.backgroundColor = 'var(--color-primary)';
+                    document.getElementById('btn-task-cancel').classList.add('hidden'); // Esconde botão cancelar
+                } else {
+                    // --- MODO CRIAÇÃO: Adiciona nova tarefa ---
+                    DB.state.tasks.push({ desc, date, time, prio, freq, done: false });
+                }
+
+                // Limpa os campos
                 document.getElementById('task-input').value = '';
+                document.getElementById('task-time').value = '';
+                // Opcional: Manter a data ou limpar. Vou manter a data atual para facilitar
+                
                 DB.save();
+            } else {
+                alert("Digite a descrição da tarefa.");
             }
         },
-        
-        // --- NOVA FUNÇÃO DE EDITAR ---
+
         edit(index) {
+            // Pega a tarefa baseada no índice
+            // OBS: Precisamos achar o índice real no array original, pois a lista pode estar filtrada/ordenada
+            // Mas o botão de editar que renderizamos já passa o índice original.
             const task = DB.state.tasks[index];
-            const newDesc = prompt("Editar nome da tarefa:", task.desc);
-            if (newDesc !== null && newDesc.trim() !== "") {
-                task.desc = newDesc;
-                // Opcional: Se quiser editar data também, descomente abaixo:
-                // const newDate = prompt("Nova data (AAAA-MM-DD):", task.date);
-                // if(newDate) task.date = newDate;
-                DB.save();
+            
+            if (task) {
+                this.editingIndex = index;
+
+                // Preenche os inputs com os dados da tarefa
+                document.getElementById('task-input').value = task.desc;
+                document.getElementById('task-date').value = task.date;
+                document.getElementById('task-time').value = task.time;
+                document.getElementById('task-prio').value = task.prio;
+                document.getElementById('task-freq').value = task.freq || 'Geral';
+
+                // Muda o visual do botão para indicar edição
+                const btn = document.getElementById('btn-task-save');
+                btn.innerText = 'Salvar Alterações';
+                btn.style.backgroundColor = 'var(--color-success)';
+                
+                // Mostra botão de cancelar
+                document.getElementById('btn-task-cancel').classList.remove('hidden');
+
+                // Rola a tela para o formulário
+                document.querySelector('#tarefas .card-centralizado').scrollIntoView({ behavior: 'smooth' });
             }
+        },
+
+        cancelEdit() {
+            this.editingIndex = null;
+            document.getElementById('task-input').value = '';
+            document.getElementById('task-time').value = '';
+            
+            const btn = document.getElementById('btn-task-save');
+            btn.innerText = 'Adicionar';
+            btn.style.backgroundColor = 'var(--color-primary)';
+            
+            document.getElementById('btn-task-cancel').classList.add('hidden');
         },
 
         toggle(index) {
@@ -1824,25 +1884,31 @@
         },
         
         delete(index) {
-            DB.state.tasks.splice(index, 1);
-            DB.save();
+            if(confirm("Excluir tarefa?")) {
+                if (this.editingIndex === index) this.cancelEdit(); // Cancela edição se deletar a que está sendo editada
+                DB.state.tasks.splice(index, 1);
+                DB.save();
+            }
         },
 
         exportToCalendar(index) {
             const t = DB.state.tasks[index];
-            if (!t.date || !t.time) return alert("Defina Data e Hora!");
+            if (!t.date || !t.time) return alert("Defina Data e Hora para agendar!");
+            
             const start = t.date.replace(/-/g, '') + 'T' + t.time.replace(/:/g, '') + '00';
+            
             const icsContent = [
                 'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
                 `DTSTART:${start}`, `DTEND:${start}`,
-                `SUMMARY:Caverna: ${t.desc}`, `DESCRIPTION:Prio: ${t.prio}`,
-                'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Reminder', 'END:VALARM',
+                `SUMMARY:Caverna: ${t.desc}`, `DESCRIPTION:Prioridade: ${t.prio}`,
+                'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Lembrete', 'END:VALARM',
                 'END:VEVENT', 'END:VCALENDAR'
             ].join('\n');
+            
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             const link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
-            link.setAttribute('download', 'tarefa.ics');
+            link.setAttribute('download', `tarefa_${index}.ics`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1855,7 +1921,8 @@
             if(!list) return;
             list.innerHTML = '';
             
-            const sortedTasks = [...DB.state.tasks].sort((a, b) => {
+            // Ordenação
+            const sortedTasks = [...DB.state.tasks].map((t, i) => ({...t, originalIndex: i})).sort((a, b) => {
                 const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
                 if (pWeight[b.prio] !== pWeight[a.prio]) return pWeight[b.prio] - pWeight[a.prio];
                 if (a.time && !b.time) return -1;
@@ -1864,22 +1931,25 @@
                 return 0;
             });
 
+            let hasTask = false;
+
             sortedTasks.forEach((t) => {
-                const originalIndex = DB.state.tasks.indexOf(t);
                 const tarefaFreq = t.freq || 'Geral';
                 if (filter !== 'all' && tarefaFreq !== filter) return;
-
+                
+                hasTask = true;
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                 const doneStyle = t.done ? 'text-decoration: line-through; opacity: 0.5;' : '';
                 const icon = t.done ? 'fa-check-square' : 'fa-square';
                 const timeHTML = t.time ? `<i class="far fa-clock" style="margin-right:4px;"></i>${t.time}` : '';
+                
                 const calendarBtn = (t.date && t.time && !t.done) 
-                    ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
+                    ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${t.originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
                     : '';
 
                 list.innerHTML += `
                     <div class="task-item fade-in">
-                        <div style="display:flex; align-items:center; cursor:pointer; flex:1; padding-right:10px;" onclick="TaskModule.toggle(${originalIndex})">
+                        <div style="display:flex; align-items:center; cursor:pointer; flex:1; padding-right:10px;" onclick="TaskModule.toggle(${t.originalIndex})">
                             <i class="far ${icon}" style="margin-right:12px; color:var(--color-primary); font-size:1.4rem;"></i>
                             <div style="width: 100%;">
                                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
@@ -1896,15 +1966,15 @@
                             
                             <div class="task-actions-row">
                                 ${calendarBtn}
-                                <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:1rem;" title="Editar"></i>
-                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
+                                <i class="fas fa-pen" onclick="TaskModule.edit(${t.originalIndex})" style="cursor:pointer; color:#888; font-size:1rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="TaskModule.delete(${t.originalIndex})" style="cursor:pointer; color:#666; font-size:1.1rem;"></i>
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+            if(!hasTask) list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
         }
     };
 
