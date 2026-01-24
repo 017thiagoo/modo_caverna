@@ -2000,33 +2000,55 @@
         }
     };
 
-    // --- 6. HABIT MODULE (ATUALIZADO: COM BOTÃO DE CONCLUIR) ---
+    // --- 6. HABIT MODULE (ATUALIZADO: HOJE -> FIM DE 2026) ---
     const HabitModule = {
         editingIdx: null,
 
+        // Gera datas de HOJE até 31/12/2026
         generateDateRange() {
             const days = [];
+            
+            // 1. Data de Início: Hoje
             const curr = new Date(); 
             curr.setHours(0,0,0,0);
+
+            // 2. Data Final: 31 de Dezembro de 2026
             const end = new Date('2026-12-31T23:59:59');
+
+            // Segurança: Se por acaso hoje for depois de 2026, mostra só os próximos 30 dias
+            if (curr > end) {
+                end.setTime(curr.getTime() + (30 * 24 * 60 * 60 * 1000));
+            }
+
             const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             
+            // Loop de Hoje até o Fim de 2026
             while (curr <= end) {
                 const d = curr.getDate().toString().padStart(2, '0');
                 const m = (curr.getMonth() + 1).toString().padStart(2, '0');
+                
+                // Ajuste de fuso horário para a chave (ID único do dia)
                 const offset = curr.getTimezoneOffset() * 60000;
                 const localISOTime = (new Date(curr.getTime() - offset)).toISOString().slice(0,10);
-                days.push({ label: `${weekDays[curr.getDay()]}<br>${d}/${m}`, key: localISOTime });
+
+                days.push({
+                    // Exibe: Sáb <br> 24/01
+                    label: `${weekDays[curr.getDay()]}<br>${d}/${m}`, 
+                    key: localISOTime
+                });
+                
+                // Avança 1 dia
                 curr.setDate(curr.getDate() + 1);
             }
             return days;
         },
 
-        checkWeeklyReset() {},
+        checkWeeklyReset() {}, 
 
         save() {
             const txt = document.getElementById('habit-input').value;
             const freq = document.getElementById('habit-freq').value; 
+            
             if (txt) {
                 if (this.editingIdx !== null) {
                     DB.state.habits[this.editingIdx].txt = txt;
@@ -2060,9 +2082,7 @@
             btn.style.backgroundColor = ''; 
         },
 
-        // Marca/Desmarca o dia específico
         toggleDay(hIdx, dateKey) {
-            // Se o hábito estiver concluído, não deixa mexer nos dias (opcional, mas faz sentido)
             if (DB.state.habits[hIdx].completed) return; 
 
             if (!DB.state.habits[hIdx].checks || Array.isArray(DB.state.habits[hIdx].checks)) {
@@ -2078,11 +2098,10 @@
             this.render();
         },
 
-        // --- NOVO: Marca o Hábito inteiro como Concluído ---
         toggleCompletion(index) {
             DB.state.habits[index].completed = !DB.state.habits[index].completed;
             DB.save();
-            this.render(); // Re-renderiza para reordenar
+            this.render(); 
         },
         
         delete(index) {
@@ -2103,13 +2122,11 @@
             const filter = filterEl ? filterEl.value : 'all';
             container.innerHTML = '';
 
+            // Gera a lista completa de dias (Hoje -> Fim de 2026)
             const dateList = this.generateDateRange(); 
-            const visibleDays = dateList.slice(0, 365); 
 
             // Ordena: Ativos primeiro, Concluídos por último
-            // Precisamos mapear o índice original para não quebrar as funções de toggle/delete
             const mappedHabits = DB.state.habits.map((h, i) => ({ ...h, originalIndex: i }));
-            
             mappedHabits.sort((a, b) => {
                 if (a.completed === b.completed) return 0;
                 return a.completed ? 1 : -1;
@@ -2118,29 +2135,28 @@
             let hasItems = false;
 
             mappedHabits.forEach((h) => {
-                const i = h.originalIndex; // Usa o índice real do array principal
+                const i = h.originalIndex;
 
                 if (filter !== 'all' && h.freq !== filter) return;
                 hasItems = true;
                 
-                // Tratamento de segurança
                 let safeChecks = h.checks;
                 if (!safeChecks || Array.isArray(safeChecks)) safeChecks = {};
 
-                // Estilos para item concluído
                 const isCompleted = h.completed;
                 const opacity = isCompleted ? '0.5' : '1';
                 const titleStyle = isCompleted ? 'text-decoration: line-through; color: #888;' : 'font-weight:600;';
                 const mainIcon = isCompleted ? 'fa-check-circle' : 'fa-circle';
                 const mainIconColor = isCompleted ? 'var(--color-success)' : '#444';
-                
-                // Gera os quadradinhos (se concluído, desabilita visualmente o cursor)
-                let checksHtml = '';
                 const cursorStyle = isCompleted ? 'cursor: default;' : 'cursor: pointer;';
                 
-                visibleDays.forEach((dateObj, idx) => {
+                let checksHtml = '';
+
+                // Renderiza TODOS os dias gerados (scroll horizontal)
+                dateList.forEach((dateObj, idx) => {
                     const isChecked = safeChecks[dateObj.key] ? 'checked' : '';
                     const isToday = idx === 0 ? 'today' : '';
+
                     checksHtml += `
                         <div class="habit-day-col ${isToday}" style="${cursorStyle}">
                             <span class="habit-day-label">${dateObj.label}</span>
@@ -2153,8 +2169,7 @@
                     <div class="habit-card-mini fade-in" style="opacity: ${opacity}; transition: opacity 0.3s;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <div style="display:flex; align-items:center; gap: 10px; flex: 1;">
-                                <i class="far ${mainIcon}" onclick="HabitModule.toggleCompletion(${i})" style="font-size: 1.2rem; color: ${mainIconColor}; cursor: pointer;" title="Concluir Hábito/Curso"></i>
-                                
+                                <i class="far ${mainIcon}" onclick="HabitModule.toggleCompletion(${i})" style="font-size: 1.2rem; color: ${mainIconColor}; cursor: pointer;" title="Concluir Hábito"></i>
                                 <div>
                                     <span style="${titleStyle} display:block;">${h.txt}</span>
                                     <span class="cat-badge">${h.freq || 'Diário'}</span>
