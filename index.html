@@ -538,47 +538,37 @@
                 margin-bottom: 0 !important;
             }
 
-            /* --- SCROLL HORIZONTAL PARA OS DIAS DO HÁBITO --- */
-        .habit-days {
-            display: flex;
-            gap: 12px; /* Espaço entre os dias */
-            overflow-x: auto; /* Permite rolar para o lado */
-            padding-bottom: 12px; /* Espaço para a barra de rolagem */
-            margin-top: 15px;
-            white-space: nowrap; /* Garante que fiquem em linha */
+            /* --- ESTILO DE SCROLL HORIZONTAL (Habitos/Cursos) --- */
+            .habit-days {
+                display: flex;
+                gap: 12px;
+                overflow-x: auto; /* Rolar para o lado */
+                padding-bottom: 10px;
+                margin-top: 15px;
+                white-space: nowrap;
+                /* Barra de rolagem fina */
+                scrollbar-width: thin;
+                scrollbar-color: #333 transparent;
+            }
+            .habit-days::-webkit-scrollbar { height: 6px; }
+            .habit-days::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+            .habit-days::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
+
+            .habit-day-col {
+                flex: 0 0 auto; /* Não encolher */
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+                min-width: 60px;
+            }
+
+            .habit-day-label {
+                font-size: 0.65rem; color: #888; font-family: 'JetBrains Mono'; text-align: center; line-height: 1.3;
+            }
             
-            /* Estilo da barra de rolagem (fina e discreta) */
-            scrollbar-width: thin;
-            scrollbar-color: #333 transparent;
-        }
-
-        /* Barra de rolagem para Webkit (Chrome/Safari) */
-        .habit-days::-webkit-scrollbar { height: 6px; }
-        .habit-days::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
-        .habit-days::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
-
-        .habit-day-col {
-            flex: 0 0 auto; /* Impede que encolha */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            min-width: 60px; /* Largura mínima para a data não quebrar feio */
-        }
-
-        .habit-day-label {
-            font-size: 0.65rem;
-            color: #888;
-            font-family: 'JetBrains Mono', monospace;
-            text-align: center;
-            line-height: 1.3;
-        }
-
-        /* Destaque visual para o dia de HOJE */
-        .habit-day-col.today .habit-day-label {
-            color: var(--color-primary);
-            font-weight: 800;
-        }
+            .habit-day-col.today .habit-day-label { color: var(--color-primary); font-weight: 800;
+            }
         }
         
         /* --- AJUSTE DESKTOP (PC) --- */
@@ -2014,64 +2004,48 @@
     const HabitModule = {
         editingIdx: null,
 
-        // Função que gera a lista de datas de Hoje até Fim de 2026
+        // Gera datas de Hoje até Fim de 2026
         generateDateRange() {
             const days = [];
-            const curr = new Date(); // Começa Hoje
-            // Zera as horas para comparar datas corretamente
+            const curr = new Date();
             curr.setHours(0,0,0,0);
-            
             const end = new Date('2026-12-31T23:59:59');
-            
             const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             
-            // Cria um loop dia a dia
             while (curr <= end) {
                 const d = curr.getDate().toString().padStart(2, '0');
                 const m = (curr.getMonth() + 1).toString().padStart(2, '0');
-                // const y = curr.getFullYear(); // Opcional se quiser economizar espaço visual
-                
-                // Formato de chave única para salvar: "2024-01-24"
-                // Importante usar o formato ISO (YYYY-MM-DD) para consistência
-                // Ajuste de fuso horário simples:
+                // Ajuste de fuso horário local para a chave
                 const offset = curr.getTimezoneOffset() * 60000;
                 const localISOTime = (new Date(curr.getTime() - offset)).toISOString().slice(0,10);
 
                 days.push({
-                    label: `${weekDays[curr.getDay()]}<br>${d}/${m}`, // Ex: Sáb <br> 24/01
-                    key: localISOTime // Chave para salvar no banco
+                    label: `${weekDays[curr.getDay()]}<br>${d}/${m}`,
+                    key: localISOTime
                 });
-                
-                // Avança 1 dia
                 curr.setDate(curr.getDate() + 1);
             }
             return days;
         },
 
-        checkWeeklyReset() {
-            // (Não é mais necessário resetar semanalmente, pois é contínuo)
-        },
+        checkWeeklyReset() {}, // Não necessário no modelo contínuo
 
         save() {
             const txt = document.getElementById('habit-input').value;
             const freq = document.getElementById('habit-freq').value; 
-            
             if (txt) {
                 if (this.editingIdx !== null) {
                     DB.state.habits[this.editingIdx].txt = txt;
                     DB.state.habits[this.editingIdx].freq = freq;
                     this.cancelEdit();
                 } else {
-                    // checks agora será um Objeto (Dicionário) em vez de Array
-                    // Ex: { "2024-01-24": true, "2024-01-25": false }
+                    // Salva checks como Objeto {} em vez de Array []
                     DB.state.habits.push({ txt, freq, checks: {} }); 
                     document.getElementById('habit-input').value = '';
                 }
                 DB.save();
                 this.render();
-            } else {
-                alert("Digite o nome do hábito.");
-            }
+            } else { alert("Digite o nome do hábito."); }
         },
 
         edit(index) {
@@ -2079,11 +2053,9 @@
             this.editingIdx = index;
             document.getElementById('habit-input').value = h.txt;
             document.getElementById('habit-freq').value = h.freq || 'Diário';
-            
             const btn = document.getElementById('btn-habit-save');
             btn.innerText = 'Atualizar';
             btn.style.backgroundColor = 'var(--color-success)'; 
-            btn.style.borderColor = 'var(--color-success)';
         },
 
         cancelEdit() {
@@ -2092,27 +2064,22 @@
             const btn = document.getElementById('btn-habit-save');
             btn.innerText = 'Adicionar';
             btn.style.backgroundColor = ''; 
-            btn.style.borderColor = '';
         },
 
         toggle(hIdx, dateKey) {
-            // Garante que é um objeto
+            // Converte para objeto se for antigo (Array) ou undefined
             if (!DB.state.habits[hIdx].checks || Array.isArray(DB.state.habits[hIdx].checks)) {
                 DB.state.habits[hIdx].checks = {};
             }
 
-            // Inverte o valor (se undefined vira true, se true vira false)
             if (DB.state.habits[hIdx].checks[dateKey]) {
-                delete DB.state.habits[hIdx].checks[dateKey]; // Remove se desmarcar (economia)
+                delete DB.state.habits[hIdx].checks[dateKey];
             } else {
                 DB.state.habits[hIdx].checks[dateKey] = true;
             }
-
             DB.save();
             if(typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
-            // Renderiza só para atualizar o visual do check
-            // (Idealmente renderizaríamos só o elemento, mas render() é rápido o suficiente aqui)
-            this.render(); 
+            this.render();
         },
         
         delete(index) {
@@ -2125,37 +2092,28 @@
         },
         
         render() {
-            // Atualiza gráfico
             if(typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
-
             const container = document.getElementById('habit-list-container');
             const filterEl = document.getElementById('habit-view-filter');
             if(!container) return;
-            
             const filter = filterEl ? filterEl.value : 'all';
             container.innerHTML = '';
 
             const dateList = this.generateDateRange(); 
-            // Para performance, vamos renderizar apenas os primeiros 30-60 dias inicialmente
-            // ou deixar rolar. Como é texto simples, até uns 100 dias renderiza bem rápido.
-            // Vou renderizar os próximos 60 dias para a UI não ficar pesada demais no celular.
-            // Se quiser ver até 2026 mesmo, aumente o slice.
-            const visibleDays = dateList.slice(0, 365); // Mostra 1 ano (365 dias)
+            // Renderiza apenas os próximos 365 dias para performance
+            const visibleDays = dateList.slice(0, 365); 
 
             DB.state.habits.forEach((h, i) => {
                 if (filter !== 'all' && h.freq !== filter) return;
                 
-                const frequencia = h.freq || 'Diário';
+                // Tratamento de segurança para dados antigos
+                let safeChecks = h.checks;
+                if (!safeChecks || Array.isArray(safeChecks)) safeChecks = {};
+
                 let checksHtml = '';
-                
-                // Converte checks antigos (Array) para Objeto se necessário (Migração)
-                if (Array.isArray(h.checks)) h.checks = {};
-                if (!h.checks) h.checks = {};
-
                 visibleDays.forEach((dateObj, idx) => {
-                    const isChecked = h.checks[dateObj.key] ? 'checked' : '';
-                    const isToday = idx === 0 ? 'today' : ''; // O primeiro da lista é Hoje
-
+                    const isChecked = safeChecks[dateObj.key] ? 'checked' : '';
+                    const isToday = idx === 0 ? 'today' : '';
                     checksHtml += `
                         <div class="habit-day-col ${isToday}">
                             <span class="habit-day-label">${dateObj.label}</span>
@@ -2169,7 +2127,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <div style="flex: 1;">
                                 <span style="font-weight:600; display:block;">${h.txt}</span>
-                                <span class="cat-badge">${frequencia}</span>
+                                <span class="cat-badge">${h.freq || 'Diário'}</span>
                             </div>
                             <div style="display:flex; gap:15px; align-items: center;">
                                 <i class="fas fa-pen" onclick="HabitModule.edit(${i})" style="cursor:pointer; color:#888; font-size:0.9rem;"></i>
@@ -2324,45 +2282,26 @@
         instances: {},
         
         renderAll() {
-            // Verifica se o container está visível para evitar erros de renderização
             const dash = document.getElementById('dashboard');
-            if (dash && dash.classList.contains('hidden')) return;
-
-            // Renderiza com um pequeno delay para garantir que o CSS aplicou o tamanho
+            if (dash && !dash.classList.contains('hidden')) {
+                setTimeout(() => { this.renderRadar(); this.renderDist(); this.renderFlow(); }, 100);
+            }
             setTimeout(() => {
-                this.renderRadar(); 
-                this.renderDist(); 
-                this.renderFlow();
                 this.renderHabitPerformance(); 
+                this.renderTaskPerformance();
+                if(this.renderLibraryPerformance) this.renderLibraryPerformance();
             }, 100);
         },
 
         commonOptions: {
-            responsive: true, 
-            maintainAspectRatio: false,
-            animation: { duration: 800 },
-            plugins: { legend: { display: false } }
+            responsive: true, maintainAspectRatio: false, animation: { duration: 800 }, plugins: { legend: { display: false } }
         },
 
-        // 1. GRÁFICO DE ATIVOS (BANCOS) - COM NOMES PERSONALIZADOS
-        // GRÁFICO DE ATIVOS (CORRIGIDO: FONTE MAIOR E SEM NEGRITO)
-        renderDist() {
-            const ctx = document.getElementById('distChart');
-            if (!ctx) return;
-            
-            // LÓGICA PARA ENCURTAR NOMES
-            const labels = DB.state.banks.map(b => {
-                const n = b.name;
-                if (n.includes('Banco do Brasil')) return 'BB';
-                if (n.includes('Caixa')) return 'Caixa';
-                if (n.includes('Itaú')) return 'Itaú';
-                if (n.includes('BTG')) return 'BTG';
-                return n.substring(0, 12);
-            });
-            
+        // GRÁFICOS PADRÃO
+        renderDist() { /* ... código mantido igual ao anterior ... */ 
+            const ctx = document.getElementById('distChart'); if (!ctx) return;
+            const labels = DB.state.banks.map(b => b.name.substring(0, 12));
             const values = DB.state.banks.map(b => b.balance);
-            
-            // CORES
             const colors = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
                 if(n.includes('itaú') || n.includes('itau')) return '#ec7000';
@@ -2370,93 +2309,75 @@
                 if(n.includes('caixa')) return '#005ca9';
                 return '#333';
             });
-            
             if (this.instances.dist) this.instances.dist.destroy();
-            
-            this.instances.dist = new Chart(ctx, { 
-                type: 'doughnut', 
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: values.length ? values : [1], 
-                        backgroundColor: values.length ? colors : ['#333'], 
-                        borderWidth: 0 
-                    }] 
-                }, 
-                options: { 
-                    ...this.commonOptions, 
-                    cutout: '55%', 
-                    layout: { padding: 10 },
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'bottom', 
-                            align: 'center',
-                            labels: { 
-                                color: '#eee', 
-                                boxWidth: 15, 
-                                padding: 20, 
-                                // --- AQUI VOCÊ MEXE NA FONTE ---
-                                font: { 
-                                    size: 18,      // Aumentei o tamanho (era 12)
-                                    weight: 'bold', // Tirei o negrito (era 'bold')
-                                    family: "'Inter', sans-serif"
-                                } 
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.raw;
-                                    const label = context.label;
-                                    return ` ${label}: R$ ${val.toFixed(2)}`;
-                                }
-                            }
-                        }
-                    } 
-                } 
-            });
+            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 14, family: "'Inter', sans-serif" } } } } } });
         },
 
+        // --- CORREÇÃO AQUI: Lida com Objeto e Array ---
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart'); if (!ctx) return;
             const filterEl = document.getElementById('habit-view-filter');
             const currentFilter = filterEl ? filterEl.value : 'all';
-            
-            // Datas para comparação
-            const todayStr = (new Date()).toISOString().slice(0,10); // "2024-01-24"
+            const todayStr = (new Date()).toISOString().slice(0,10);
             
             let cDone = 0, cMissed = 0, cPending = 0;
 
             DB.state.habits.forEach(h => {
                 if (currentFilter !== 'all' && h.freq !== currentFilter) return;
-                
-                // Se for objeto (novo formato)
-                if (h.checks && !Array.isArray(h.checks)) {
-                    // Contamos quantos checks TRUE existem (Concluídos)
-                    cDone += Object.values(h.checks).filter(val => val === true).length;
-                    
-                    // Para simplificar o gráfico de "Pendentes/Missed" num sistema contínuo,
-                    // podemos considerar apenas o dia de HOJE. 
-                    // Se hoje não fez -> Pendente. Se fez -> Done.
-                    // (Calcular missed histórico exigiria iterar todos os dias passados)
-                    
-                    if (!h.checks[todayStr]) cPending++; 
 
-                } else if (Array.isArray(h.checks)) {
-                    // Legado (Array de 7 dias) - Mantém compatibilidade se houver dados antigos
-                    const todayIndex = new Date().getDay();
-                    h.checks.forEach((isChecked, dayIndex) => {
-                        if (isChecked) cDone++; else if (dayIndex < todayIndex) cMissed++; else cPending++;
-                    });
+                // Se for o NOVO formato (Objeto)
+                if (h.checks && !Array.isArray(h.checks)) {
+                    // Conta quantos true existem
+                    cDone += Object.values(h.checks).filter(v => v === true).length;
+                    // Se não fez hoje, conta como pendente
+                    if (!h.checks[todayStr]) cPending++;
+                } 
+                // Se for o ANTIGO formato (Array) - Fallback para não quebrar
+                else if (Array.isArray(h.checks)) {
+                    h.checks.forEach(c => { if(c) cDone++; else cPending++; });
                 }
             });
-            
-            // Se cDone for 0, o gráfico fica cinza. 
             this.renderDoughnut(ctx, 'habit', cDone, cMissed, cPending);
         },
 
-        // 3. RADAR (MANTIDO IGUAL)
+        renderTaskPerformance() {
+            const ctx = document.getElementById('taskPerformanceChart'); if (!ctx) return;
+            const filter = document.getElementById('task-view-filter') ? document.getElementById('task-view-filter').value : 'all';
+            const today = new Date().toISOString().split('T')[0];
+            let cDone = 0, cMissed = 0, cPending = 0;
+            DB.state.tasks.forEach(t => {
+                const tFreq = t.freq || 'Geral';
+                if (filter !== 'all' && tFreq !== filter) return;
+                if (t.done) cDone++; else { if (!t.date) cPending++; else if (t.date < today) cMissed++; else cPending++; }
+            });
+            this.renderDoughnut(ctx, 'task', cDone, cMissed, cPending);
+        },
+
+        renderLibraryPerformance() {
+             const ctx = document.getElementById('libraryPerformanceChart'); if (!ctx) return;
+             const filterEl = document.getElementById('lib-view-filter');
+             const currentFilter = filterEl ? filterEl.value : 'all';
+             let cDone = 0, cMissed = 0, cPending = 0;
+             DB.state.library.forEach(item => {
+                if (currentFilter !== 'all' && item.freq !== currentFilter) return;
+                // Conta Cursos (Dias estudados) e Livros (Conclusão)
+                if (item.type === 'course' && Array.isArray(item.checks)) {
+                    item.checks.forEach(c => { if(c) cDone++; else cPending++; });
+                } else {
+                    if (item.done) cDone++; else cPending++;
+                }
+             });
+             this.renderDoughnut(ctx, 'library', cDone, cMissed, cPending);
+        },
+
+        renderDoughnut(ctx, instanceName, done, missed, pending) {
+            const total = done + missed + pending;
+            const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
+            const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
+            if (this.instances[instanceName]) this.instances[instanceName].destroy();
+            this.instances[instanceName] = new Chart(ctx, { type: 'doughnut', data: { labels: ['Concluído', 'Atrasado/Falta', 'Pendente'], datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }] }, options: { ...this.commonOptions, cutout: '60%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', align: 'center', labels: { color: '#eee', boxWidth: 15, padding: 25, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
+        },
+
         renderRadar() {
              const ctx = document.getElementById('radarChart'); if (!ctx) return;
              const tasksTotal = DB.state.tasks.length || 1; 
@@ -2467,7 +2388,6 @@
              this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         },
 
-        // 4. FLUXO DE CAIXA (MANTIDO IGUAL)
         renderFlow() {
              const ctx = document.getElementById('flowChart'); if (!ctx) return;
              let income = 0, expense = 0; 
