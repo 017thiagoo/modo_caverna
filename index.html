@@ -1095,13 +1095,13 @@
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                    <button id="btn-task-save" class="btn-primary" style="width: 100%; margin-bottom: 0;" onclick="TaskModule.save()">
+                <div id="task-btns-wrapper" style="display: flex; gap: 10px;">
+                    <button id="btn-task-save" class="btn-primary" style="width: 100%; height: 55px; font-size: 1rem; font-weight: 700; background-color: var(--color-primary); margin-bottom: 0;" onclick="TaskModule.save()">
                         Adicionar
                     </button>
                     
-                    <button id="btn-task-cancel" class="btn-danger hidden" style="width: 100%; margin-bottom: 0;" onclick="TaskModule.cancelEdit()">
-                        Cancelar
+                    <button id="btn-task-cancel" class="btn-danger hidden" style="width: 100px; height: 55px; font-size: 1rem; font-weight: 700; margin-bottom: 0;" onclick="TaskModule.cancelEdit()">
+                        <i class="fas fa-times"></i> Cancelar
                     </button>
                 </div>
 
@@ -1884,7 +1884,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (DATA/HORA TRAVADAS & TAG CONCLUÍDO) ---
+    // --- 5. TASK MODULE (BOTÕES IGUAIS BIBLIOTECA + CHECKBOX IGUAL) ---
     const TaskModule = {
         save() {
             const desc = document.getElementById('task-input').value;
@@ -1896,6 +1896,7 @@
             if (desc) {
                 const btnCancel = document.getElementById('btn-task-cancel');
                 
+                // Se o botão cancelar NÃO estiver escondido, estamos editando
                 if (!btnCancel.classList.contains('hidden') && this.editingIndex !== undefined && this.editingIndex !== null) {
                    const task = DB.state.tasks[this.editingIndex];
                    task.desc = desc;
@@ -1929,10 +1930,12 @@
             document.getElementById('task-freq').value = task.freq || 'Geral';
 
             const btnSave = document.getElementById('btn-task-save');
-            btnSave.innerText = 'Salvar Alterações';
+            btnSave.innerText = 'Salvar'; // Texto curto para caber ao lado do cancelar
             btnSave.style.backgroundColor = 'var(--color-success)';
             
+            // Mostra o botão cancelar
             document.getElementById('btn-task-cancel').classList.remove('hidden');
+            
             document.getElementById('task-input').focus();
         },
 
@@ -1944,6 +1947,7 @@
             btnSave.innerText = 'Adicionar';
             btnSave.style.backgroundColor = 'var(--color-primary)';
             
+            // Esconde o botão cancelar
             document.getElementById('btn-task-cancel').classList.add('hidden');
         },
 
@@ -1994,8 +1998,6 @@
             const sortedTasks = [...DB.state.tasks].sort((a, b) => {
                 const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
                 if (pWeight[b.prio] !== pWeight[a.prio]) return pWeight[b.prio] - pWeight[a.prio];
-                // Mantém concluídos no final, se quiser (opcional)
-                // if (a.done !== b.done) return a.done ? 1 : -1;
                 if (a.time && !b.time) return -1;
                 if (!a.time && b.time) return 1;
                 if (a.time && b.time) return a.time.localeCompare(b.time);
@@ -2008,19 +2010,14 @@
                 if (filter !== 'all' && tarefaFreq !== filter) return;
 
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
-                
-                // VISUAL
                 const checkIcon = t.done ? 'fa-check-circle' : 'fa-circle';
                 const checkColor = t.done ? 'var(--color-success)' : '#444';
                 const titleClass = t.done ? 'item-done' : '';
                 
-                // DATA E HORA (FORMATADAS)
                 const timeHTML = t.time ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--color-primary); margin-left:8px;">${t.time}</span>` : '';
                 const dateHTML = t.date ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#888;">${t.date.split('-').reverse().join('/')}</span>` : '';
-                
-                // TAG CONCLUÍDO
                 const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
-
+                
                 const calendarBtn = (t.date && t.time && !t.done) 
                     ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
                     : '';
@@ -2028,12 +2025,9 @@
                 list.innerHTML += `
                     <div class="task-item fade-in">
                         <div style="display:flex; align-items:center; gap:12px; flex:1; min-width: 0;">
-                            
                             <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="cursor:pointer; font-size:1.3rem; min-width:20px; flex-shrink:0; color:${checkColor};"></i>
-
                             <div style="flex:1; min-width: 0;">
                                 <span class="${titleClass}" style="display:block; font-weight:500; font-size: 0.95rem; margin-bottom: 6px; word-break: break-word; white-space: normal;">${t.desc}</span>
-                                
                                 <div style="display:flex; align-items:center; gap:8px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap;">
                                     <span class="priority-badge mono ${prioClass}">${t.prio}</span>
                                     <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${tarefaFreq}</span>
@@ -2043,7 +2037,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div style="display:flex; gap:12px; align-items: center; margin-left: 10px; flex-shrink: 0;">
                             ${calendarBtn}
                             <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
