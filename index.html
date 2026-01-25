@@ -2024,7 +2024,7 @@
                 const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
 
                 const calendarBtn = (t.date && t.time && !t.done) 
-                    ? `<button onclick="TaskModule.exportToCalendar(${originalIndex})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; padding:0; margin-right:5px;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
+                    ? `<button onclick="TaskModule.exportToCalendar(${originalIndex})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; padding:0; margin-right:0px;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
                     : '';
 
                 list.innerHTML += `
