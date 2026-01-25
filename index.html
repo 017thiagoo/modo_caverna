@@ -2258,7 +2258,7 @@
         }
     };
 
-    // --- 7. LIBRARY MODULE (COM EDIÇÃO COMPLETA E ANOTAÇÕES) ---
+    // --- 7. LIBRARY MODULE (ATUALIZADO: TAG CONCLUÍDO) ---
     const LibraryModule = {
         editingIndex: null,
 
@@ -2266,27 +2266,22 @@
             const title = document.getElementById('lib-title').value;
             const type = document.getElementById('lib-type').value;
             const freq = document.getElementById('lib-freq').value;
-            const note = document.getElementById('lib-note').value; // Novo campo
+            const note = document.getElementById('lib-note').value; 
 
             if(title) {
                 if (this.editingIndex !== null) {
-                    // --- MODO EDIÇÃO ---
                     const item = DB.state.library[this.editingIndex];
                     item.title = title;
                     item.type = type;
                     item.freq = freq;
                     item.note = note;
-                    
                     this.cancelEdit();
                 } else {
-                    // --- MODO CRIAÇÃO ---
                     DB.state.library.push({ title, type, freq, note, done: false });
                 }
 
-                // Limpar campos
                 document.getElementById('lib-title').value = '';
                 document.getElementById('lib-note').value = '';
-                
                 DB.save();
                 this.render();
             } else {
@@ -2298,21 +2293,16 @@
             const item = DB.state.library[index];
             if (item) {
                 this.editingIndex = index;
-                
-                // Preenche o formulário
                 document.getElementById('lib-title').value = item.title;
                 document.getElementById('lib-type').value = item.type;
                 document.getElementById('lib-freq').value = item.freq || 'Diário';
-                document.getElementById('lib-note').value = item.note || ''; // Preenche a nota
+                document.getElementById('lib-note').value = item.note || '';
 
-                // Ajusta botões
                 const btnSave = document.getElementById('btn-lib-save');
                 btnSave.innerText = 'Salvar Alterações';
                 btnSave.style.backgroundColor = 'var(--color-success)';
                 
                 document.getElementById('btn-lib-cancel').classList.remove('hidden');
-                
-                // Rola para o formulário
                 document.getElementById('lib-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         },
@@ -2348,6 +2338,7 @@
             const list = document.getElementById('library-list-container');
             const filterEl = document.getElementById('lib-view-filter');
             if(!list) return;
+            
             const filter = filterEl ? filterEl.value : 'all';
             list.innerHTML = '';
 
@@ -2367,6 +2358,9 @@
                     ? `<div style="font-size:0.75rem; color:#ef4444; margin-top:2px; font-family:'JetBrains Mono';"><i class="fas fa-bookmark" style="font-size:0.7rem; margin-right:4px;"></i>${item.note}</div>` 
                     : '';
 
+                // Tag Concluído (IGUAL AOS HÁBITOS)
+                const statusBadge = item.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
+
                 list.innerHTML += `
                     <div class="task-item fade-in">
                         <div style="display:flex; align-items:center; gap:10px; width:100%;">
@@ -2377,6 +2371,7 @@
                                     <span class="${titleClass}" style="display:block; font-weight:500;">${item.title}</span>
                                     <div style="display:flex; align-items:center; gap:6px;">
                                         <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${meta}</span>
+                                        ${statusBadge}
                                     </div>
                                     ${noteDisplay}
                                 </div>
