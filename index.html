@@ -1095,13 +1095,13 @@
                     </select>
                 </div>
 
-                <div id="task-action-group" style="display: flex; gap: 10px; width: 100%;">
-                    <button id="btn-task-save" class="btn-primary" style="flex: 1; margin-bottom: 0;" onclick="TaskModule.save()">
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                    <button id="btn-task-save" class="btn-primary" style="width: 100%; margin-bottom: 0;" onclick="TaskModule.save()">
                         Adicionar
                     </button>
                     
-                    <button id="btn-task-cancel" class="btn-danger hidden" style="width: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: 0;" onclick="TaskModule.cancelEdit()">
-                        <i class="fas fa-times"></i>
+                    <button id="btn-task-cancel" class="btn-danger hidden" style="width: 100%; margin-bottom: 0;" onclick="TaskModule.cancelEdit()">
+                        Cancelar
                     </button>
                 </div>
 
@@ -1884,7 +1884,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (CORRIGIDO: TEXTO LONGO E BOTÕES) ---
+    // --- 5. TASK MODULE (BOTÕES EMPILHADOS & CHECKBOX IGUAL BIBLIOTECA) ---
     const TaskModule = {
         save() {
             const desc = document.getElementById('task-input').value;
@@ -1929,13 +1929,11 @@
             document.getElementById('task-freq').value = task.freq || 'Geral';
 
             const btnSave = document.getElementById('btn-task-save');
-            btnSave.innerText = 'Salvar';
+            btnSave.innerText = 'Salvar Alterações';
             btnSave.style.backgroundColor = 'var(--color-success)';
             
-            // Mostra o botão cancelar ao lado
-            const btnCancel = document.getElementById('btn-task-cancel');
-            btnCancel.classList.remove('hidden');
-            btnCancel.style.display = 'flex'; // Garante display flex para centralizar o icone
+            // Apenas remove a classe hidden, o CSS flex-column cuida do resto
+            document.getElementById('btn-task-cancel').classList.remove('hidden');
             
             document.getElementById('task-input').focus();
         },
@@ -2010,10 +2008,12 @@
                 if (filter !== 'all' && tarefaFreq !== filter) return;
 
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
+                
+                // VISUAL DO ÍCONE (IGUAL BIBLIOTECA)
                 const checkIcon = t.done ? 'fa-check-circle' : 'fa-circle';
                 const checkColor = t.done ? 'var(--color-success)' : '#444';
                 const titleClass = t.done ? 'item-done' : '';
-                
+
                 const timeHTML = t.time ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--color-primary); margin-left:8px;">${t.time}</span>` : '';
                 const dateHTML = t.date ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#888;">${t.date.split('-').reverse().join('/')}</span>` : '';
                 
