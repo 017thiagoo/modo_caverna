@@ -1880,7 +1880,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (CORRIGIDO: CHECK IGUAL BIBLIOTECA) ---
+    // --- 5. TASK MODULE (CORRIGIDO: CHECKBOX IDÊNTICO À BIBLIOTECA) ---
     const TaskModule = {
         save() {
             const desc = document.getElementById('task-input').value;
@@ -2004,8 +2004,8 @@
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                 
                 // --- LÓGICA DO ÍCONE (IGUAL BIBLIOTECA) ---
+                // O CSS já trata as cores .fa-check-circle (verde) e .fa-circle (cinza)
                 const checkIcon = t.done ? 'fa-check-circle' : 'fa-circle';
-                const checkColor = t.done ? 'var(--color-success)' : '#444'; // Verde se feito, Cinza se pendente
                 const titleClass = t.done ? 'item-done' : '';
 
                 const timeHTML = t.time ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--color-primary); margin-left:8px;">${t.time}</span>` : '';
@@ -2017,26 +2017,28 @@
 
                 list.innerHTML += `
                     <div class="task-item fade-in">
-                        <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                        <div style="display:flex; align-items:center; cursor:pointer; flex:1; padding-right:10px;" onclick="TaskModule.toggle(${originalIndex})">
                             
-                            <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="cursor:pointer; font-size:1.3rem; min-width:20px; color:${checkColor};"></i>
+                            <i class="far ${checkIcon}" style="font-size:1.1rem; min-width:20px; margin-right:12px;"></i>
 
-                            <div style="flex:1;">
-                                <span class="${titleClass}" style="display:block; font-weight:500; font-size: 0.95rem; margin-bottom: 4px;">${t.desc}</span>
-                                
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div style="width: 100%;">
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
                                     <span class="priority-badge mono ${prioClass}">${t.prio}</span>
                                     <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${tarefaFreq}</span>
-                                    ${dateHTML}
-                                    ${timeHTML}
                                 </div>
+                                <span class="${titleClass}" style="display:block; font-weight:500; line-height:1.2;">${t.desc}</span>
                             </div>
                         </div>
 
-                        <div style="display:flex; gap:12px; align-items: center; margin-left: 10px;">
-                            ${calendarBtn}
-                            <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
-                            <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
+                        <div class="task-meta-right">
+                            <div class="task-date-display">${t.date ? t.date.split('-').reverse().join('/') : ''}</div>
+                            <div class="task-time-display">${timeHTML}</div>
+                            
+                            <div class="task-actions-row">
+                                ${calendarBtn}
+                                <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1rem;"></i>
+                            </div>
                         </div>
                     </div>
                 `;
