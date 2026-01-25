@@ -2412,7 +2412,7 @@
                 return '#333';
             });
             if (this.instances.dist) this.instances.dist.destroy();
-            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 14, family: "'Inter', sans-serif" } } } } } });
+            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
         },
 
         // --- Atualize apenas esta função dentro do ChartsModule ---
@@ -2480,7 +2480,7 @@
             const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
             const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
             if (this.instances[instanceName]) this.instances[instanceName].destroy();
-            this.instances[instanceName] = new Chart(ctx, { type: 'doughnut', data: { labels: ['Concluído', 'Atrasado/Falta', 'Pendente'], datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }] }, options: { ...this.commonOptions, cutout: '60%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', align: 'center', labels: { color: '#eee', boxWidth: 15, padding: 10, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
+            this.instances[instanceName] = new Chart(ctx, { type: 'doughnut', data: { labels: ['Concluído', 'Atrasado/Falta', 'Pendente'], datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }] }, options: { ...this.commonOptions, cutout: '60%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', align: 'center', labels: { color: '#eee', boxWidth: 15, padding: 15, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
         },
 
         renderRadar() {
