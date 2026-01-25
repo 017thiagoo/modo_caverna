@@ -1884,7 +1884,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (AJUSTE FINO: GAP E CORES) ---
+    // --- 5. TASK MODULE (LAYOUT 1 LINHA PRESERVADO + DATA TRAVADA VERMELHA + BOTÕES FIXOS) ---
     const TaskModule = {
         save() {
             const desc = document.getElementById('task-input').value;
@@ -1929,7 +1929,7 @@
             document.getElementById('task-freq').value = task.freq || 'Geral';
 
             const btnSave = document.getElementById('btn-task-save');
-            btnSave.innerText = 'Salvar Alterações';
+            btnSave.innerText = 'Salvar'; 
             btnSave.style.backgroundColor = 'var(--color-success)';
             
             document.getElementById('btn-task-cancel').classList.remove('hidden');
@@ -1968,8 +1968,8 @@
             const start = t.date.replace(/-/g, '') + 'T' + t.time.replace(/:/g, '') + '00';
             const icsContent = [
                 'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-                'DTSTART:' + start, 'DTEND:' + start,
-                'SUMMARY:Caverna: ' + t.desc, 'DESCRIPTION:Prio: ' + t.prio,
+                `DTSTART:${start}`, `DTEND:${start}`,
+                `SUMMARY:Caverna: ${t.desc}`, `DESCRIPTION:Prio: ${t.prio}`,
                 'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Reminder', 'END:VALARM',
                 'END:VEVENT', 'END:VCALENDAR'
             ].join('\n');
@@ -1989,7 +1989,7 @@
             const filter = document.getElementById('task-view-filter').value;
             
             if(!list) return;
-            let htmlContent = '';
+            list.innerHTML = '';
             
             const sortedTasks = [...DB.state.tasks].sort((a, b) => {
                 const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
@@ -2006,55 +2006,50 @@
                 if (filter !== 'all' && tarefaFreq !== filter) return;
 
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
-                
-                // Configuração Visual
                 const checkIcon = t.done ? 'fa-check-circle' : 'fa-circle';
                 const checkColor = t.done ? 'var(--color-success)' : '#444';
-                const titleStyle = t.done ? 'text-decoration: line-through; color: var(--color-text-muted);' : 'color: #fff;';
+                const titleClass = t.done ? 'item-done' : '';
                 
-                // Badge de Concluído
-                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000; border:none;">Concluído</span>' : '';
-
-                // Data e Hora (AGORA COM A COR var(--color-primary))
+                // Formata Data/Hora
                 const timeStr = t.time ? t.time : '';
                 const dateStr = t.date ? t.date.split('-').reverse().join('/') : '';
                 
+                // HTML da data/hora (só aparece se existir)
+                // TRAVADO COM white-space:nowrap E COR VERMELHA (var(--color-primary))
                 let dateTimeHTML = '';
                 if(dateStr || timeStr) {
-                    dateTimeHTML = `
-                        <div style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; white-space:nowrap;">
-                             <span style="font-family:'JetBrains Mono'; font-size:0.65rem; color:var(--color-primary);">${dateStr}</span>
-                             <span style="font-family:'JetBrains Mono'; font-size:0.65rem; color:var(--color-primary); font-weight:bold;">${timeStr}</span>
-                        </div>
-                    `;
+                    dateTimeHTML = `<small style="color:var(--color-primary); font-weight:600; white-space:nowrap; margin-left: 6px;">${dateStr} ${timeStr}</small>`;
                 }
 
-                // Botão Calendário
+                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
+
                 const calendarBtn = (t.date && t.time && !t.done) 
-                    ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem; margin-right: 0;" title="Agendar"></i>` 
+                    ? `<button onclick="TaskModule.exportToCalendar(${originalIndex})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; padding:0;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
                     : '';
 
-                htmlContent += `
-                    <div class="task-item fade-in" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 8px;">
-                        
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="cursor:pointer; font-size:1.3rem; min-width:24px; margin-top:2px; color:${checkColor};"></i>
-                            <span style="display:block; font-weight:500; font-size: 0.95rem; line-height:1.4; word-break: break-word; ${titleStyle}">${t.desc}</span>
-                        </div>
-
-                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-left: 36px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                list.innerHTML += `
+                    <div class="task-item fade-in">
+                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                             
-                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                <span class="priority-badge mono ${prioClass}">${t.prio}</span>
-                                <span class="cat-badge" style="margin:0; font-size:0.6rem;">${tarefaFreq}</span>
-                                ${statusBadge}
-                                ${dateTimeHTML}
+                            <div style="display:flex; align-items:center; gap:15px; flex:1; min-width:0;">
+                                <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="color:${checkColor}; cursor:pointer; font-size:1.5rem; flex-shrink:0;"></i>
+                                
+                                <div style="min-width:0;">
+                                    <span class="${titleClass}" style="font-weight:600; display:block; word-break:break-word;">${t.desc}</span>
+                                    
+                                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin-top:2px;">
+                                        <span class="priority-badge mono ${prioClass}" style="font-size:0.6rem; padding:1px 4px;">${t.prio}</span>
+                                        <span class="cat-badge" style="font-size:0.6rem;">${tarefaFreq}</span>
+                                        ${statusBadge}
+                                        ${dateTimeHTML}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div style="display:flex; gap:10px; align-items:center; flex-shrink: 0;">
+                            <div style="display:flex; gap:10px; align-items:center; margin-left:10px; flex-shrink:0;">
                                 ${calendarBtn}
                                 <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
-                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1rem;" title="Excluir"></i>
+                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1.1rem;" title="Excluir"></i>
                             </div>
 
                         </div>
@@ -2062,7 +2057,7 @@
                 `;
             });
 
-            list.innerHTML = htmlContent || '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
         }
     };
 
