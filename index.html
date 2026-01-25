@@ -1884,7 +1884,7 @@
         }
     };
 
-    // --- 5. TASK MODULE (BOTÕES IGUAIS BIBLIOTECA + CHECKBOX IGUAL) ---
+// --- 5. TASK MODULE (CORRIGIDO E OTIMIZADO) ---
     const TaskModule = {
         save() {
             const desc = document.getElementById('task-input').value;
@@ -1896,7 +1896,6 @@
             if (desc) {
                 const btnCancel = document.getElementById('btn-task-cancel');
                 
-                // Se o botão cancelar NÃO estiver escondido, estamos editando
                 if (!btnCancel.classList.contains('hidden') && this.editingIndex !== undefined && this.editingIndex !== null) {
                    const task = DB.state.tasks[this.editingIndex];
                    task.desc = desc;
@@ -1930,12 +1929,10 @@
             document.getElementById('task-freq').value = task.freq || 'Geral';
 
             const btnSave = document.getElementById('btn-task-save');
-            btnSave.innerText = 'Salvar'; // Texto curto para caber ao lado do cancelar
+            btnSave.innerText = 'Salvar Alterações';
             btnSave.style.backgroundColor = 'var(--color-success)';
             
-            // Mostra o botão cancelar
             document.getElementById('btn-task-cancel').classList.remove('hidden');
-            
             document.getElementById('task-input').focus();
         },
 
@@ -1947,7 +1944,6 @@
             btnSave.innerText = 'Adicionar';
             btnSave.style.backgroundColor = 'var(--color-primary)';
             
-            // Esconde o botão cancelar
             document.getElementById('btn-task-cancel').classList.add('hidden');
         },
 
@@ -2014,33 +2010,53 @@
                 const checkColor = t.done ? 'var(--color-success)' : '#444';
                 const titleClass = t.done ? 'item-done' : '';
                 
-                const timeHTML = t.time ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--color-primary); margin-left:8px;">${t.time}</span>` : '';
-                const dateHTML = t.date ? `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#888;">${t.date.split('-').reverse().join('/')}</span>` : '';
-                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
+                // Formatação Data/Hora
+                const timeStr = t.time ? t.time : '';
+                const dateStr = t.date ? t.date.split('-').reverse().join('/') : '';
                 
+                // HTML Condicional para Data/Hora (Só aparece se existir)
+                let dateTimeHTML = '';
+                if(dateStr || timeStr) {
+                    dateTimeHTML = `
+                        <div style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; white-space:nowrap;">
+                             <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:#ccc;">${dateStr}</span>
+                             <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--color-primary); font-weight:bold;">${timeStr}</span>
+                        </div>
+                    `;
+                }
+
+                // HTML Condicional para Badge Concluído
+                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000; border:none;">Concluído</span>' : '';
+
+                // HTML Condicional para Botão Calendário
                 const calendarBtn = (t.date && t.time && !t.done) 
                     ? `<i class="fas fa-calendar-plus" onclick="TaskModule.exportToCalendar(${originalIndex})" style="cursor:pointer; color:var(--color-primary); font-size:1.1rem;" title="Agendar"></i>` 
                     : '';
 
+                // Renderização com estrutura DIV limpa e segura
                 list.innerHTML += `
-                    <div class="task-item fade-in">
-                        <div style="display:flex; align-items:center; gap:12px; flex:1; min-width: 0;">
-                            <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="cursor:pointer; font-size:1.3rem; min-width:20px; flex-shrink:0; color:${checkColor};"></i>
-                            <div style="flex:1; min-width: 0;">
-                                <span class="${titleClass}" style="display:block; font-weight:500; font-size: 0.95rem; margin-bottom: 6px; word-break: break-word; white-space: normal;">${t.desc}</span>
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap;">
-                                    <span class="priority-badge mono ${prioClass}">${t.prio}</span>
-                                    <span class="cat-badge" style="margin-left:0; font-size:0.6rem;">${tarefaFreq}</span>
-                                    ${statusBadge}
-                                    ${dateHTML}
-                                    ${timeHTML}
-                                </div>
-                            </div>
+                    <div class="task-item fade-in" style="flex-direction: column; align-items: stretch; gap: 8px; padding-bottom: 12px;">
+                        
+                        <div style="display:flex; align-items:flex-start; gap:12px;">
+                            <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="cursor:pointer; font-size:1.3rem; min-width:24px; margin-top:2px; color:${checkColor};"></i>
+                            <span class="${titleClass}" style="display:block; font-weight:500; font-size: 0.95rem; line-height:1.4; word-break: break-word;">${t.desc}</span>
                         </div>
-                        <div style="display:flex; gap:12px; align-items: center; margin-left: 10px; flex-shrink: 0;">
-                            ${calendarBtn}
-                            <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
-                            <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1rem;" title="Excluir"></i>
+
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-left: 36px;">
+                            
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <span class="priority-badge mono ${prioClass}">${t.prio}</span>
+                                <span class="cat-badge" style="margin:0; font-size:0.6rem;">${tarefaFreq}</span>
+                                ${statusBadge}
+                                ${dateTimeHTML}
+                            </div>
+
+                            <div style="display:flex; gap:15px; align-items:center;">
+                                ${calendarBtn}
+                                <i class="fas fa-pen" onclick="TaskModule.edit(${originalIndex})" style="cursor:pointer; color:#888; font-size:0.9rem;" title="Editar"></i>
+                                <i class="fas fa-trash" onclick="TaskModule.delete(${originalIndex})" style="cursor:pointer; color:#666; font-size:1rem;" title="Excluir"></i>
+                            </div>
+
                         </div>
                     </div>
                 `;
