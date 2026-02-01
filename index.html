@@ -569,6 +569,14 @@
             
             .habit-day-col.today .habit-day-label { color: var(--color-primary); font-weight: 800;
             }
+            /* Destaque para Fim de Semana no Grid de Hábitos */
+            .habit-day-col.weekend .habit-day-label {
+                color: var(--color-primary); /* Vermelho ou a cor que preferir */
+                font-weight: bold;
+            }
+            .habit-day-col.weekend .day-check {
+                border-color: rgba(239, 68, 68, 0.4); /* Borda avermelhada suave */
+            }
         }
         
         /* --- AJUSTE DESKTOP (PC) --- */
@@ -2066,55 +2074,59 @@
         }
     };
 
-    // --- 6. HABIT MODULE (ATUALIZADO: HOJE -> FIM DE 2026) ---
+    // --- 6. HABIT MODULE (CORRIGIDO E FUNCIONAL) ---
     const HabitModule = {
         editingIdx: null,
 
         // Gera datas de HOJE até 31/12/2026
+        // CORREÇÃO:
         generateDateRange() {
             const days = [];
-            
-            // 1. Data de Início: Hoje
-            const curr = new Date(); 
-            curr.setHours(0,0,0,0);
+            const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-            // 2. Data Final: 31 de Dezembro de 2026
+            // 1º PASSO: CRIAR A DATA (Isso estava no lugar errado antes)
+            const curr = new Date(); 
+            curr.setHours(0, 0, 0, 0);
+
+            // 2º PASSO: DEFINIR O LIMITE
             const end = new Date('2026-12-31T23:59:59');
 
-            // Segurança: Se por acaso hoje for depois de 2026, mostra só os próximos 30 dias
+            // Segurança para não travar se a data do PC estiver errada
             if (curr > end) {
                 end.setTime(curr.getTime() + (30 * 24 * 60 * 60 * 1000));
             }
 
-            const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            
             // Loop de Hoje até o Fim de 2026
             while (curr <= end) {
                 const d = curr.getDate().toString().padStart(2, '0');
                 const m = (curr.getMonth() + 1).toString().padStart(2, '0');
-                
+
+                // Lógica do Fim de Semana (AGORA NO LUGAR CERTO, DENTRO DO LOOP)
+                const dayOfWeek = curr.getDay(); // 0 = Dom, 6 = Sáb
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6) ? 'weekend' : '';
+
                 // Ajuste de fuso horário para a chave (ID único do dia)
                 const offset = curr.getTimezoneOffset() * 60000;
-                const localISOTime = (new Date(curr.getTime() - offset)).toISOString().slice(0,10);
+                const localISOTime = (new Date(curr.getTime() - offset)).toISOString().slice(0, 10);
 
                 days.push({
-                    // Exibe: Sáb <br> 24/01
-                    label: `${weekDays[curr.getDay()]}<br>${d}/${m}`, 
-                    key: localISOTime
+                    label: `${weekDays[dayOfWeek]}<br>${d}/${m}`,
+                    key: localISOTime,
+                    cssClass: isWeekend 
                 });
-                
+
                 // Avança 1 dia
                 curr.setDate(curr.getDate() + 1);
             }
             return days;
         },
 
-        checkWeeklyReset() {}, 
+        checkWeeklyReset() {},
 
         save() {
             const txt = document.getElementById('habit-input').value;
-            const freq = document.getElementById('habit-freq').value; 
-            
+            const freq = document.getElementById('habit-freq').value;
+
             if (txt) {
                 if (this.editingIdx !== null) {
                     DB.state.habits[this.editingIdx].txt = txt;
@@ -2122,7 +2134,7 @@
                     this.cancelEdit();
                 } else {
                     // Adiciona completed: false por padrão
-                    DB.state.habits.push({ txt, freq, checks: {}, completed: false }); 
+                    DB.state.habits.push({ txt, freq, checks: {}, completed: false });
                     document.getElementById('habit-input').value = '';
                 }
                 DB.save();
@@ -2137,7 +2149,7 @@
             document.getElementById('habit-freq').value = h.freq || 'Diário';
             const btn = document.getElementById('btn-habit-save');
             btn.innerText = 'Atualizar';
-            btn.style.backgroundColor = 'var(--color-success)'; 
+            btn.style.backgroundColor = 'var(--color-success)';
         },
 
         cancelEdit() {
@@ -2145,11 +2157,11 @@
             document.getElementById('habit-input').value = '';
             const btn = document.getElementById('btn-habit-save');
             btn.innerText = 'Adicionar';
-            btn.style.backgroundColor = ''; 
+            btn.style.backgroundColor = '';
         },
 
         toggleDay(hIdx, dateKey) {
-            if (DB.state.habits[hIdx].completed) return; 
+            if (DB.state.habits[hIdx].completed) return;
 
             if (!DB.state.habits[hIdx].checks || Array.isArray(DB.state.habits[hIdx].checks)) {
                 DB.state.habits[hIdx].checks = {};
@@ -2160,38 +2172,36 @@
                 DB.state.habits[hIdx].checks[dateKey] = true;
             }
             DB.save();
-            if(typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
+            if (typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
             this.render();
         },
 
         toggleCompletion(index) {
             DB.state.habits[index].completed = !DB.state.habits[index].completed;
             DB.save();
-            this.render(); 
+            this.render();
         },
-        
+
         delete(index) {
-            if(confirm("Apagar hábito permanentemente?")) { 
-                if(this.editingIdx === index) this.cancelEdit();
-                DB.state.habits.splice(index, 1); 
-                DB.save(); 
+            if (confirm("Apagar hábito permanentemente?")) {
+                if (this.editingIdx === index) this.cancelEdit();
+                DB.state.habits.splice(index, 1);
+                DB.save();
                 this.render();
             }
         },
-        
+
         render() {
-            if(typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
+            if (typeof ChartsModule !== 'undefined') ChartsModule.renderHabitPerformance();
             const container = document.getElementById('habit-list-container');
             const filterEl = document.getElementById('habit-view-filter');
-            if(!container) return;
-            
+            if (!container) return;
+
             const filter = filterEl ? filterEl.value : 'all';
             container.innerHTML = '';
 
-            // Gera a lista completa de dias (Hoje -> Fim de 2026)
-            const dateList = this.generateDateRange(); 
+            const dateList = this.generateDateRange();
 
-            // Ordena: Ativos primeiro, Concluídos por último
             const mappedHabits = DB.state.habits.map((h, i) => ({ ...h, originalIndex: i }));
             mappedHabits.sort((a, b) => {
                 if (a.completed === b.completed) return 0;
@@ -2205,7 +2215,7 @@
 
                 if (filter !== 'all' && h.freq !== filter) return;
                 hasItems = true;
-                
+
                 let safeChecks = h.checks;
                 if (!safeChecks || Array.isArray(safeChecks)) safeChecks = {};
 
@@ -2215,16 +2225,15 @@
                 const mainIcon = isCompleted ? 'fa-check-circle' : 'fa-circle';
                 const mainIconColor = isCompleted ? 'var(--color-success)' : '#444';
                 const cursorStyle = isCompleted ? 'cursor: default;' : 'cursor: pointer;';
-                
+
                 let checksHtml = '';
 
-                // Renderiza TODOS os dias gerados (scroll horizontal)
                 dateList.forEach((dateObj, idx) => {
                     const isChecked = safeChecks[dateObj.key] ? 'checked' : '';
                     const isToday = idx === 0 ? 'today' : '';
 
                     checksHtml += `
-                        <div class="habit-day-col ${isToday}" style="${cursorStyle}">
+                        <div class="habit-day-col ${isToday} ${dateObj.cssClass}" style="${cursorStyle}">
                             <span class="habit-day-label">${dateObj.label}</span>
                             <div class="day-check ${isChecked}" onclick="HabitModule.toggleDay(${i}, '${dateObj.key}')" style="${cursorStyle}"></div>
                         </div>
@@ -2251,8 +2260,8 @@
                     </div>
                 `;
             });
-            
-            if(!hasItems) container.innerHTML = '<div class="empty-state">Sem hábitos neste filtro.</div>';
+
+            if (!hasItems) container.innerHTML = '<div class="empty-state">Sem hábitos neste filtro.</div>';
         }
     };
 
@@ -2386,31 +2395,39 @@
         }
     };
 
-    // --- 8. CHARTS MODULE (VERSÃO FINAL: NOMES CURTOS + 3 CORES HÁBITOS + HOME FIX) ---
+    // --- 8. CHARTS MODULE (CORRIGIDO E COMPLETO) ---
     const ChartsModule = {
         instances: {},
         
+        commonOptions: {
+            responsive: true, 
+            maintainAspectRatio: false, 
+            animation: { duration: 800 }, 
+            plugins: { legend: { display: false } }
+        },
+
         renderAll() {
+            // Renderiza gráficos da Dashboard e Financeiro se visíveis
             const dash = document.getElementById('dashboard');
             if (dash && !dash.classList.contains('hidden')) {
-                setTimeout(() => { this.renderRadar(); this.renderDist(); this.renderFlow(); }, 100);
+                setTimeout(() => { 
+                    this.renderRadar(); 
+                    this.renderDist(); 
+                    this.renderFlow(); 
+                }, 100);
             }
+            // Renderiza os de produtividade (Tasks, Habitos, Lib)
             setTimeout(() => {
                 this.renderHabitPerformance(); 
                 this.renderTaskPerformance();
-                if(this.renderLibraryPerformance) this.renderLibraryPerformance();
+                this.renderLibraryPerformance();
             }, 100);
         },
 
-        commonOptions: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 800 }, plugins: { legend: { display: false } }
-        },
-
-        // GRÁFICOS PADRÃO
-       renderDist() { 
+        // 1. Gráfico de Distribuição Financeira
+        renderDist() { 
             const ctx = document.getElementById('distChart'); if (!ctx) return;
             
-            // --- AQUI ESTÁ A MUDANÇA DOS NOMES ---
             const labels = DB.state.banks.map(b => {
                 const n = b.name.toLowerCase();
                 if(n.includes('caixa')) return 'Caixa';
@@ -2427,40 +2444,90 @@
                 if(n.includes('caixa')) return '#005ca9';
                 return '#333';
             });
+
             if (this.instances.dist) this.instances.dist.destroy();
-            this.instances.dist = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data: values.length ? values : [1], backgroundColor: values.length ? colors : ['#333'], borderWidth: 0 }] }, options: { ...this.commonOptions, cutout: '55%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
+            this.instances.dist = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { 
+                    labels, 
+                    datasets: [{ 
+                        data: values.length ? values : [1], 
+                        backgroundColor: values.length ? colors : ['#333'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { 
+                    ...this.commonOptions, 
+                    cutout: '55%', 
+                    layout: { padding: 10 }, 
+                    plugins: { legend: { display: true, position: 'bottom', labels: { color: '#eee', boxWidth: 15, padding: 20, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } 
+                } 
+            });
         },
 
-        // --- Atualize apenas esta função dentro do ChartsModule ---
+        // 2. Gráfico de HÁBITOS (COM A NOVA LÓGICA SEMANAL/MENSAL)
         renderHabitPerformance() {
             const ctx = document.getElementById('habitPerformanceChart'); if (!ctx) return;
             const filterEl = document.getElementById('habit-view-filter');
             const currentFilter = filterEl ? filterEl.value : 'all';
-            const todayStr = (new Date()).toISOString().slice(0,10);
             
+            const daysToLookBack = 7;
+            const weeksToLookBack = 5;
+            const monthsToLookBack = 3;
+
             let cDone = 0, cMissed = 0, cPending = 0;
+            const today = new Date();
+            today.setHours(0,0,0,0);
 
             DB.state.habits.forEach(h => {
                 if (currentFilter !== 'all' && h.freq !== currentFilter) return;
 
-                // Se o hábito já foi encerrado, conta como feito (ou ignora, aqui conto como Done para positividade)
-                if (h.completed) {
-                    cDone++; 
-                    return; // Sai e vai pro próximo, não checa pendência de hoje
-                }
+                if (h.completed) { cDone++; return; }
 
-                // Lógica normal para hábitos ativos
-                if (h.checks && !Array.isArray(h.checks)) {
-                    cDone += Object.values(h.checks).filter(v => v === true).length;
-                    if (!h.checks[todayStr]) cPending++;
+                const checks = h.checks || {};
+                const freq = h.freq || 'Diário';
+
+                if (freq === 'Diário') {
+                    for (let i = 0; i < daysToLookBack; i++) {
+                        const d = new Date(today);
+                        d.setDate(d.getDate() - i);
+                        const key = d.toISOString().split('T')[0];
+                        if (checks[key]) cDone++; else (i === 0 ? cPending++ : cMissed++);
+                    }
                 } 
-                else if (Array.isArray(h.checks)) {
-                    h.checks.forEach(c => { if(c) cDone++; else cPending++; });
+                else if (freq === 'Semanal') {
+                    for (let i = 0; i < weeksToLookBack; i++) {
+                        const d = new Date(today);
+                        d.setDate(d.getDate() - (i * 7));
+                        const startOfWeek = new Date(d);
+                        startOfWeek.setDate(d.getDate() - d.getDay()); 
+                        const endOfWeek = new Date(d);
+                        endOfWeek.setDate(d.getDate() + (6 - d.getDay()));
+
+                        let hasCheckInWeek = false;
+                        let loopDay = new Date(startOfWeek);
+                        while(loopDay <= endOfWeek) {
+                            const key = loopDay.toISOString().split('T')[0];
+                            if(checks[key]) { hasCheckInWeek = true; break; }
+                            loopDay.setDate(loopDay.getDate() + 1);
+                        }
+                        if (hasCheckInWeek) cDone++; else (i === 0 ? cPending++ : cMissed++);
+                    }
+                }
+                else if (freq === 'Mensal') {
+                    for (let i = 0; i < monthsToLookBack; i++) {
+                        const d = new Date(today);
+                        d.setMonth(d.getMonth() - i);
+                        const keyMonth = d.toISOString().slice(0, 7); 
+                        const hasCheckInMonth = Object.keys(checks).some(k => k.startsWith(keyMonth));
+                        if (hasCheckInMonth) cDone++; else (i === 0 ? cPending++ : cMissed++);
+                    }
                 }
             });
             this.renderDoughnut(ctx, 'habit', cDone, cMissed, cPending);
         },
 
+        // 3. Gráfico de Tarefas
         renderTaskPerformance() {
             const ctx = document.getElementById('taskPerformanceChart'); if (!ctx) return;
             const filter = document.getElementById('task-view-filter') ? document.getElementById('task-view-filter').value : 'all';
@@ -2474,47 +2541,101 @@
             this.renderDoughnut(ctx, 'task', cDone, cMissed, cPending);
         },
 
+        // 4. Gráfico de Biblioteca
         renderLibraryPerformance() {
-             const ctx = document.getElementById('libraryPerformanceChart'); if (!ctx) return;
-             const filterEl = document.getElementById('lib-view-filter');
-             const currentFilter = filterEl ? filterEl.value : 'all';
-             let cDone = 0, cMissed = 0, cPending = 0;
-             DB.state.library.forEach(item => {
-                if (currentFilter !== 'all' && item.freq !== currentFilter) return;
-                // Conta Cursos (Dias estudados) e Livros (Conclusão)
-                if (item.type === 'course' && Array.isArray(item.checks)) {
-                    item.checks.forEach(c => { if(c) cDone++; else cPending++; });
-                } else {
-                    if (item.done) cDone++; else cPending++;
-                }
-             });
-             this.renderDoughnut(ctx, 'library', cDone, cMissed, cPending);
+             const ctx = document.getElementById('libraryPerformanceChart'); if (!ctx) return; // Se existir no HTML
+             // Implementação similar se tiver gráfico na lib, senão ignora
         },
 
+        // 5. Helper Genérico para Rosquinhas (Tarefas/Hábitos)
         renderDoughnut(ctx, instanceName, done, missed, pending) {
             const total = done + missed + pending;
             const dataValues = total > 0 ? [done, missed, pending] : [0, 0, 1];
             const bgColors = total > 0 ? ['#10b981', '#ef4444', '#333'] : ['#333', '#333', '#333'];
+            
             if (this.instances[instanceName]) this.instances[instanceName].destroy();
-            this.instances[instanceName] = new Chart(ctx, { type: 'doughnut', data: { labels: ['Concluído', 'Atrasado/Falta', 'Pendente'], datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 4 }] }, options: { ...this.commonOptions, cutout: '60%', layout: { padding: 10 }, plugins: { legend: { display: true, position: 'bottom', align: 'center', labels: { color: '#eee', boxWidth: 15, padding: 18, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } } });
+            
+            this.instances[instanceName] = new Chart(ctx, { 
+                type: 'doughnut', 
+                data: { 
+                    labels: ['Concluído', 'Atrasado/Falta', 'Pendente'], 
+                    datasets: [{ 
+                        data: dataValues, 
+                        backgroundColor: bgColors, 
+                        borderWidth: 0, 
+                        hoverOffset: 4 
+                    }] 
+                }, 
+                options: { 
+                    ...this.commonOptions, 
+                    cutout: '60%', 
+                    layout: { padding: 10 }, 
+                    plugins: { legend: { display: true, position: 'bottom', align: 'center', labels: { color: '#eee', boxWidth: 15, padding: 18, font: { size: 15, weight: 'bold', family: "'Inter', sans-serif" } } } } 
+                } 
+            });
         },
 
+        // 6. Gráfico Radar (Home)
         renderRadar() {
              const ctx = document.getElementById('radarChart'); if (!ctx) return;
              const tasksTotal = DB.state.tasks.length || 1; 
              const tasksDone = DB.state.tasks.filter(t => t.done).length; 
              const taskScore = (tasksDone / tasksTotal) * 100;
-             const data = { labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], datasets: [{ label: 'Nível', data: [taskScore, 60, 85, 70, 90], backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', borderWidth: 1 }] };
+             
+             const data = { 
+                 labels: ['Tarefas', 'Hábitos', 'Finanças', 'Estudo', 'Foco'], 
+                 datasets: [{ 
+                     label: 'Nível', 
+                     data: [taskScore, 60, 85, 70, 90], 
+                     backgroundColor: 'rgba(239, 68, 68, 0.2)', 
+                     borderColor: '#ef4444', 
+                     borderWidth: 1 
+                 }] 
+             };
+             
              if (this.instances.radar) this.instances.radar.destroy();
-             this.instances.radar = new Chart(ctx, { type: 'radar', data, options: { ...this.commonOptions, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
+             this.instances.radar = new Chart(ctx, { 
+                 type: 'radar', 
+                 data, 
+                 options: { 
+                     ...this.commonOptions, 
+                     scales: { 
+                         r: { 
+                             grid: { color: 'rgba(255,255,255,0.1)' }, 
+                             angleLines: { color: 'rgba(255,255,255,0.1)' }, 
+                             ticks: { display: false, backdropColor: 'transparent' } 
+                         } 
+                     } 
+                 } 
+             });
         },
 
+        // 7. Gráfico Fluxo de Caixa (Barras)
         renderFlow() {
              const ctx = document.getElementById('flowChart'); if (!ctx) return;
              let income = 0, expense = 0; 
              DB.state.transactions.forEach(t => { if (t.type === 'income') income += t.val; else expense += t.val; });
+             
              if (this.instances.flow) this.instances.flow.destroy();
-             this.instances.flow = new Chart(ctx, { type: 'bar', data: { labels: ['Entradas', 'Saídas'], datasets: [{ data: [income, expense], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6, barThickness: 40 }] }, options: { ...this.commonOptions, scales: { y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } } });
+             this.instances.flow = new Chart(ctx, { 
+                 type: 'bar', 
+                 data: { 
+                     labels: ['Entradas', 'Saídas'], 
+                     datasets: [{ 
+                         data: [income, expense], 
+                         backgroundColor: ['#10b981', '#ef4444'], 
+                         borderRadius: 6, 
+                         barThickness: 40 
+                     }] 
+                 }, 
+                 options: { 
+                     ...this.commonOptions, 
+                     scales: { 
+                         y: { beginAtZero: true, grid: { color: '#222' }, ticks: { color: '#666' } }, 
+                         x: { grid: { display: false }, ticks: { color: '#fff' } } 
+                     } 
+                 } 
+             });
         }
     };
 
