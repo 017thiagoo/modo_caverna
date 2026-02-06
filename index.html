@@ -1533,7 +1533,6 @@
                 let brandClass = '';
                 const n = b.name.toLowerCase();
                 
-                // --- LÓGICA DE CORES DA LISTA CORRIGIDA ---
                 if (n.includes('itaú') || n.includes('itau')) brandClass = 'bank-itau';
                 else if (n.includes('btg')) brandClass = 'bank-btg';
                 else if (n.includes('caixa')) brandClass = 'bank-caixa';
@@ -1559,7 +1558,23 @@
             const log = document.getElementById('transaction-log');
             if(log) {
                 log.innerHTML = '';
-                DB.state.transactions.slice(0, 30).forEach(t => {
+
+                // --- NOVA LÓGICA DE ORDENAÇÃO POR DATA ---
+                // Cria uma cópia da lista para não alterar a original permanentemente se não quiser
+                const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
+                    // Converte de "dd/mm/aaaa" para "aaaa-mm-dd" para comparar corretamente
+                    const dateA = a.date.split('/').reverse().join('-');
+                    const dateB = b.date.split('/').reverse().join('-');
+                    
+                    // Compara as datas (mais recente primeiro)
+                    if (dateA > dateB) return -1;
+                    if (dateA < dateB) return 1;
+                    
+                    // Se as datas forem iguais, usa o ID (mais novo primeiro) como desempate
+                    return b.id - a.id; 
+                });
+
+                sortedTransactions.slice(0, 30).forEach(t => {
                     const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
                     const sign = t.type === 'income' ? '+' : '-';
                     log.innerHTML += `
