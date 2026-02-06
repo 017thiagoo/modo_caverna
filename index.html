@@ -1658,7 +1658,7 @@
             
             if(!list || !select) return;
 
-            // Renderiza Contas
+            // --- Renderiza Contas (Mantido igual) ---
             list.innerHTML = '';
             const currentSelectedAcc = select.value;
             select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
@@ -1685,7 +1685,7 @@
             });
             if (currentSelectedAcc) select.value = currentSelectedAcc;
 
-            // Renderiza Histórico
+            // --- RENDERIZAÇÃO DO HISTÓRICO (Com Banco em Nova Linha) ---
             const log = document.getElementById('transaction-log');
             const filterEl = document.getElementById('trans-history-filter');
             const filterVal = filterEl ? filterEl.value : 'all';
@@ -1693,7 +1693,7 @@
             if(log) {
                 log.innerHTML = '';
 
-                // Ordenar
+                // 1. Ordenar
                 const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
                     const dateA = a.date.split('/').reverse().join('-');
                     const dateB = b.date.split('/').reverse().join('-');
@@ -1702,41 +1702,56 @@
                     return b.id - a.id; 
                 });
 
-                // Filtrar
+                // 2. Filtrar
                 const filteredTransactions = sortedTransactions.filter(t => {
                     if (filterVal === 'all') return true;
                     if (filterVal === 'income' || filterVal === 'expense') return t.type === filterVal;
                     return (t.cat || 'Outros') === filterVal;
                 });
 
-                // Renderizar
+                // 3. Renderizar
                 filteredTransactions.slice(0, 30).forEach(t => {
                     const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
                     const sign = t.type === 'income' ? '+' : '-';
                     const category = t.cat || 'Outros';
                     const iconClass = this.getCategoryIcon(category);
 
-                    // ADICIONADO: t.accName (Nome do Banco) no HTML abaixo
                     log.innerHTML += `
                         <div class="transaction-item fade-in" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
                             
-                            <div style="display: flex; align-items: center; flex: 1; min-width: 0;">
-                                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <div style="display: flex; align-items: flex-start; flex: 1; min-width: 0;">
+                                
+                                <div style="
+                                    width: 40px; 
+                                    height: 40px; 
+                                    border-radius: 10px; 
+                                    background: rgba(255,255,255,0.05); 
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center; 
+                                    margin-right: 12px; 
+                                    margin-top: 2px; /* Ajuste fino para alinhar ao topo do texto */
+                                    flex-shrink: 0;">
                                     <i class="fas ${iconClass}" style="color: #888; font-size: 1rem;"></i>
                                 </div>
-                                <div style="min-width: 0; padding-right: 10px; overflow: hidden;">
-                                    <span class="trans-desc" style="display: block; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.desc}</span>
-                                    <span class="trans-date" style="font-size: 0.75rem; color: #666; display: block; margin-top: 2px;">
-                                        ${t.date} • ${category} • <span style="color:var(--color-text-main); font-weight:500;">${t.accName}</span>
+
+                                <div style="min-width: 0; padding-right: 10px;">
+                                    <span class="trans-desc" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 2px; line-height: 1.2;">${t.desc}</span>
+                                    
+                                    <span class="trans-date" style="font-size: 0.75rem; color: #666; display: block;">
+                                        ${t.date} • ${category}
+                                    </span>
+
+                                    <span style="font-size: 0.7rem; color: var(--color-primary); font-weight: 600; display: block; margin-top: 2px; opacity: 0.9;">
+                                        <i class="fas fa-university" style="font-size: 0.6rem; margin-right: 3px;"></i> ${t.accName}
                                     </span>
                                 </div>
                             </div>
 
                             <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;">
                                 <div class="mono ${colorClass}" style="font-weight: 700; font-size: 0.9rem;">${sign} R$ ${t.val.toFixed(2)}</div>
-                                
                                 <div style="margin-top: 6px; display: flex; gap: 15px;">
-                                    <i class="fas fa-pen" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666;" title="Editar"></i>
+                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666;" title="Editar"></i>
                                     <i class="fas fa-trash" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #ef4444;" title="Excluir"></i>
                                 </div>
                             </div>
