@@ -1033,10 +1033,25 @@
                     </div>
 
                     <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-                        <label style="font-size: 0.8rem; color: #888; display:block; margin-bottom:5px;">Data da Transação:</label>
+                        <label style="font-size: 0.8rem; color: #888; display:block; margin-bottom:5px;">Detalhes da Operação:</label>
                         
-                        <input type="date" id="trans-date" class="form-control" style="margin-bottom: 10px;">
-                        <input type="text" id="trans-desc" class="form-control" placeholder="Descrição (ex: Almoço)" style="margin-bottom: 10px;">
+                        <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
+                            <input type="date" id="trans-date" class="form-control" style="margin-bottom:0; flex:1;">
+                            <select id="trans-cat" class="form-control" style="margin-bottom:0; flex:1.5;">
+                                <option value="Outros">📦 Outros</option>
+                                <option value="Alimentação">🍔 Alimentação</option>
+                                <option value="Transporte">🚗 Transporte</option>
+                                <option value="Moradia">🏠 Moradia</option>
+                                <option value="Educação">📚 Educação</option>
+                                <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                <option value="Compras">🛒 Compras</option>
+                                <option value="Investimento">💰 Investimento</option>
+                                <option value="Salário">💼 Salário/Renda</option>
+                            </select>
+                        </div>
+
+                        <input type="text" id="trans-desc" class="form-control" placeholder="Descrição (ex: Almoço, Netflix...)" style="margin-bottom: 10px;">
                         
                         <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
                             <input type="number" id="trans-val" class="form-control" placeholder="Valor (R$)">
@@ -1055,8 +1070,25 @@
                         </div>
                     </div>
 
-                    <div class="card-header" style="margin-bottom: 10px;">
-                        <span class="card-title">Histórico Recente</span>
+                    <div class="card-header" style="justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 5px;">
+                        <span class="card-title">Histórico</span>
+                        <select id="trans-history-filter" class="form-control" style="width: 150px; height: 30px; padding: 0 5px; font-size: 0.75rem; margin-bottom: 0;" onchange="FinanceModule.render()">
+                            <option value="all">Todas as Operações</option>
+                            <option disabled>--- TIPOS ---</option>
+                            <option value="income">Entradas (Geral)</option>
+                            <option value="expense">Saídas (Geral)</option>
+                            <option disabled>--- CATEGORIAS ---</option>
+                            <option value="Alimentação">🍔 Alimentação</option>
+                            <option value="Transporte">🚗 Transporte</option>
+                            <option value="Moradia">🏠 Moradia</option>
+                            <option value="Educação">📚 Educação</option>
+                            <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                            <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                            <option value="Compras">🛒 Compras</option>
+                            <option value="Investimento">💰 Investimento</option>
+                            <option value="Salário">💼 Salário</option>
+                            <option value="Outros">📦 Outros</option>
+                        </select>
                     </div>
                     <div id="transaction-log" class="transaction-list"></div>
                 </div>
@@ -1408,7 +1440,7 @@
         }
     };
 
-    // --- 3. FINANCE MODULE (CORREÇÃO DE CORES DA LISTA) ---
+    // --- 3. FINANCE MODULE (ATUALIZADO COM CATEGORIAS E FILTROS COMPLETOS) ---
     const FinanceModule = {
         init() {
             const today = new Date().toISOString().split('T')[0];
@@ -1419,17 +1451,30 @@
             });
         },
 
+        // Helper para pegar ícone da categoria
+        getCategoryIcon(cat) {
+            const map = {
+                'Alimentação': 'fa-utensils',
+                'Transporte': 'fa-car',
+                'Moradia': 'fa-home',
+                'Educação': 'fa-graduation-cap',
+                'Lazer/Assinaturas': 'fa-film',
+                'Saúde/Cuidados': 'fa-heartbeat',
+                'Compras': 'fa-shopping-bag',
+                'Investimento': 'fa-chart-line',
+                'Salário': 'fa-briefcase',
+                'Outros': 'fa-box'
+            };
+            return map[cat] || 'fa-circle';
+        },
+
         addAccount() {
             const name = document.getElementById('bank-select').value;
             const bal = parseFloat(document.getElementById('bank-balance-init').value);
             
             if (name && !isNaN(bal)) {
-                // VERIFICA DUPLICIDADE
                 const exists = DB.state.banks.some(b => b.name === name);
-                if (exists) {
-                    alert(`A conta ${name} já existe!`);
-                    return;
-                }
+                if (exists) { return alert(`A conta ${name} já existe!`); }
 
                 DB.state.banks.push({ id: Date.now(), name, balance: bal });
                 document.getElementById('bank-balance-init').value = '';
@@ -1461,6 +1506,7 @@
             const val = parseFloat(document.getElementById('trans-val').value);
             const accId = parseInt(document.getElementById('trans-account-select').value);
             const dateVal = document.getElementById('trans-date').value;
+            const cat = document.getElementById('trans-cat').value || 'Outros'; // Captura a categoria
 
             if (desc && !isNaN(val) && accId && dateVal) {
                 const bank = DB.state.banks.find(b => b.id === accId);
@@ -1472,7 +1518,11 @@
                     DB.state.transactions.unshift({
                         id: Date.now(),
                         date: `${dia}/${mes}/${ano}`,
-                        desc, val, type, accName: bank.name
+                        desc, 
+                        val, 
+                        type, 
+                        accName: bank.name,
+                        cat: cat // Salva a categoria no objeto
                     });
 
                     document.getElementById('trans-desc').value = '';
@@ -1556,43 +1606,64 @@
             });
 
             const log = document.getElementById('transaction-log');
+            const filterEl = document.getElementById('trans-history-filter');
+            const filterVal = filterEl ? filterEl.value : 'all';
+
             if(log) {
                 log.innerHTML = '';
 
-                // --- NOVA LÓGICA DE ORDENAÇÃO POR DATA ---
-                // Cria uma cópia da lista para não alterar a original permanentemente se não quiser
+                // 1. Ordenação por Data (Recente -> Antigo)
                 const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
-                    // Converte de "dd/mm/aaaa" para "aaaa-mm-dd" para comparar corretamente
                     const dateA = a.date.split('/').reverse().join('-');
                     const dateB = b.date.split('/').reverse().join('-');
-                    
-                    // Compara as datas (mais recente primeiro)
                     if (dateA > dateB) return -1;
                     if (dateA < dateB) return 1;
-                    
-                    // Se as datas forem iguais, usa o ID (mais novo primeiro) como desempate
                     return b.id - a.id; 
                 });
 
-                sortedTransactions.slice(0, 30).forEach(t => {
+                // 2. Filtragem Poderosa (Tipo OU Categoria)
+                const filteredTransactions = sortedTransactions.filter(t => {
+                    if (filterVal === 'all') return true;
+                    // Se for 'income' ou 'expense', filtra pelo tipo
+                    if (filterVal === 'income' || filterVal === 'expense') return t.type === filterVal;
+                    // Senão, filtra pela categoria (Ex: 'Alimentação')
+                    return (t.cat || 'Outros') === filterVal;
+                });
+
+                // 3. Renderização
+                filteredTransactions.slice(0, 30).forEach(t => {
                     const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
                     const sign = t.type === 'income' ? '+' : '-';
+                    const category = t.cat || 'Outros';
+                    const iconClass = this.getCategoryIcon(category);
+
                     log.innerHTML += `
-                        <div class="transaction-item">
-                            <div class="trans-meta">
-                                <span class="trans-desc">${t.desc}</span>
-                                <span class="trans-date">${t.date} • ${t.accName}</span>
+                        <div class="transaction-item fade-in">
+                            <div class="trans-meta" style="display:flex; align-items:flex-start; gap:12px;">
+                                <div style="margin-top:2px; width:24px; text-align:center;">
+                                    <i class="fas ${iconClass}" style="color:#666; font-size:0.9rem;"></i>
+                                </div>
+                                <div>
+                                    <span class="trans-desc" style="display:block;">${t.desc}</span>
+                                    <span class="trans-date" style="font-size:0.7rem; color:#888;">
+                                        ${t.date} • <span style="color:#aaa;">${category}</span> • ${t.accName}
+                                    </span>
+                                </div>
                             </div>
-                            <div style="text-align:right;">
+                            <div style="text-align:right; white-space:nowrap;">
                                 <div class="mono ${colorClass}" style="font-weight:bold;">${sign} R$ ${t.val.toFixed(2)}</div>
                                 <div style="margin-top:4px; display:flex; gap:10px; justify-content:flex-end;">
-                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#666;"></i>
-                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#ef4444;"></i>
+                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#666;" title="Editar Valor/Desc"></i>
+                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor:pointer; font-size:0.8rem; color:#ef4444;" title="Excluir"></i>
                                 </div>
                             </div>
                         </div>
                     `;
                 });
+                
+                if(filteredTransactions.length === 0) {
+                    log.innerHTML = '<div style="text-align:center; color:#666; padding:20px; border:1px dashed #333; border-radius:8px;">Nenhum registro encontrado para este filtro.</div>';
+                }
             }
         }
     };
