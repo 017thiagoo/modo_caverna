@@ -1033,7 +1033,12 @@
                     </div>
 
                     <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-                        <label style="font-size: 0.8rem; color: #888; display:block; margin-bottom:5px;">Detalhes da Operação:</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <label style="font-size: 0.8rem; color: #888;">Detalhes da Operação:</label>
+                            <span id="btn-cancel-trans-edit" onclick="FinanceModule.cancelEditTransaction()" style="font-size: 0.75rem; color: var(--color-danger); cursor: pointer; display: none; text-decoration: underline;">
+                                Cancelar Edição
+                            </span>
+                        </div>
                         
                         <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
                             <input type="date" id="trans-date" class="form-control" style="margin-bottom:0; flex:1;">
@@ -1061,10 +1066,10 @@
                         </div>
                         
                         <div class="btn-group btns-financeiro" style="width: 100%;">
-                            <button class="btn-danger" onclick="FinanceModule.addTransaction('expense')">
+                            <button id="btn-expense" class="btn-danger" onclick="FinanceModule.addTransaction('expense')">
                                 <i class="fas fa-arrow-down"></i> Saída
                             </button>
-                            <button class="btn-success" onclick="FinanceModule.addTransaction('income')">
+                            <button id="btn-income" class="btn-success" onclick="FinanceModule.addTransaction('income')">
                                 <i class="fas fa-arrow-up"></i> Entrada
                             </button>
                         </div>
@@ -1074,7 +1079,7 @@
                         display: flex; 
                         justify-content: space-between; 
                         align-items: center; 
-                        flex-wrap: wrap; /* Permite quebrar linha no celular pequeno */
+                        flex-wrap: wrap; 
                         gap: 10px; 
                         margin-bottom: 15px;">
                         
@@ -1083,7 +1088,7 @@
                         <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                             <label for="trans-history-filter" style="font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 600;">Filtrar:</label>
                             
-                            <div style="position: relative; width: 130px;">
+                            <div style="position: relative; width: 105px;">
                                 <select id="trans-history-filter" class="form-control" style="
                                     width: 100%; 
                                     height: 28px; 
@@ -1096,17 +1101,16 @@
                                     outline: none;
                                     cursor: pointer;" 
                                     onchange="FinanceModule.render()">
-                                    
                                     <option value="all">Todos</option>
                                     <option disabled>── TIPO ──</option>
-                                    <option value="income">Entradas (Verde)</option>
-                                    <option value="expense">Saídas (Vermelho)</option>
+                                    <option value="income">Entradas</option>
+                                    <option value="expense">Saídas</option>
                                     <option disabled>── CATEGORIA ──</option>
                                     <option value="Alimentação">Alimentação</option>
                                     <option value="Transporte">Transporte</option>
                                     <option value="Moradia">Moradia</option>
                                     <option value="Educação">Educação</option>
-                                    <option value="Lazer/Assinaturas">Lazer/Assinaturas</option>
+                                    <option value="Lazer/Assinaturas">Lazer</option>
                                     <option value="Saúde/Cuidados">Saúde</option>
                                     <option value="Compras">Compras</option>
                                     <option value="Investimento">Investimento</option>
@@ -1466,8 +1470,10 @@
         }
     };
 
-    // --- 3. FINANCE MODULE (ATUALIZADO COM CATEGORIAS E FILTROS COMPLETOS) ---
+    // --- 3. FINANCE MODULE (ATUALIZADO: EDIÇÃO COMPLETA + ÍCONES MAIORES) ---
     const FinanceModule = {
+        editingTransId: null, // Variável para controlar se estamos editando
+
         init() {
             const today = new Date().toISOString().split('T')[0];
             const inputs = ['trans-date', 'task-date', 'fixed-date', 'inc-date'];
@@ -1477,7 +1483,6 @@
             });
         },
 
-        // Helper para pegar ícone da categoria
         getCategoryIcon(cat) {
             const map = {
                 'Alimentação': 'fa-utensils',
@@ -1497,11 +1502,8 @@
         addAccount() {
             const name = document.getElementById('bank-select').value;
             const bal = parseFloat(document.getElementById('bank-balance-init').value);
-            
             if (name && !isNaN(bal)) {
-                const exists = DB.state.banks.some(b => b.name === name);
-                if (exists) { return alert(`A conta ${name} já existe!`); }
-
+                if (DB.state.banks.some(b => b.name === name)) return alert(`Conta já existe!`);
                 DB.state.banks.push({ id: Date.now(), name, balance: bal });
                 document.getElementById('bank-balance-init').value = '';
                 UI.toggle('bank-add-form');
@@ -1527,37 +1529,108 @@
             }
         },
 
+        // Função Principal: Adicionar ou Atualizar Transação
         addTransaction(type) {
             const desc = document.getElementById('trans-desc').value;
             const val = parseFloat(document.getElementById('trans-val').value);
             const accId = parseInt(document.getElementById('trans-account-select').value);
             const dateVal = document.getElementById('trans-date').value;
-            const cat = document.getElementById('trans-cat').value || 'Outros'; // Captura a categoria
+            const cat = document.getElementById('trans-cat').value || 'Outros';
 
-            if (desc && !isNaN(val) && accId && dateVal) {
-                const bank = DB.state.banks.find(b => b.id === accId);
-                if (bank) {
+            if (!desc || isNaN(val) || !accId || !dateVal) {
+                return alert("Preencha todos os campos!");
+            }
+
+            const bank = DB.state.banks.find(b => b.id === accId);
+            if (!bank) return alert("Conta não encontrada.");
+
+            // --- LÓGICA DE EDIÇÃO ---
+            if (this.editingTransId) {
+                const transIndex = DB.state.transactions.findIndex(t => t.id === this.editingTransId);
+                if (transIndex > -1) {
+                    const oldTrans = DB.state.transactions[transIndex];
+                    
+                    // 1. Reverter saldo da conta antiga
+                    const oldBank = DB.state.banks.find(b => b.name === oldTrans.accName);
+                    if (oldBank) {
+                        if (oldTrans.type === 'income') oldBank.balance -= oldTrans.val;
+                        else oldBank.balance += oldTrans.val;
+                    }
+
+                    // 2. Aplicar novo saldo na conta nova (ou a mesma)
                     if (type === 'income') bank.balance += val;
                     else bank.balance -= val;
 
+                    // 3. Atualizar dados da transação
                     const [ano, mes, dia] = dateVal.split('-');
-                    DB.state.transactions.unshift({
-                        id: Date.now(),
+                    DB.state.transactions[transIndex] = {
+                        ...oldTrans,
                         date: `${dia}/${mes}/${ano}`,
-                        desc, 
-                        val, 
-                        type, 
-                        accName: bank.name,
-                        cat: cat // Salva a categoria no objeto
-                    });
+                        desc, val, type, cat,
+                        accName: bank.name
+                    };
 
-                    document.getElementById('trans-desc').value = '';
-                    document.getElementById('trans-val').value = '';
-                    DB.save();
+                    this.cancelEditTransaction(); // Sai do modo edição
                 }
-            } else {
-                alert("Preencha todos os campos!");
+            } 
+            // --- LÓGICA DE ADIÇÃO (NOVA) ---
+            else {
+                if (type === 'income') bank.balance += val;
+                else bank.balance -= val;
+
+                const [ano, mes, dia] = dateVal.split('-');
+                DB.state.transactions.unshift({
+                    id: Date.now(),
+                    date: `${dia}/${mes}/${ano}`,
+                    desc, val, type, cat,
+                    accName: bank.name
+                });
+
+                // Limpa campos apenas se for nova inclusão
+                document.getElementById('trans-desc').value = '';
+                document.getElementById('trans-val').value = '';
             }
+
+            DB.save();
+        },
+
+        // Entrar no modo de edição
+        editTransaction(id) {
+            const trans = DB.state.transactions.find(t => t.id === id);
+            if (!trans) return;
+
+            this.editingTransId = id;
+
+            // Preenche o formulário
+            document.getElementById('trans-desc').value = trans.desc;
+            document.getElementById('trans-val').value = trans.val;
+            
+            // Converte data de dd/mm/aaaa para aaaa-mm-dd para o input
+            const parts = trans.date.split('/');
+            document.getElementById('trans-date').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            
+            if (trans.cat) document.getElementById('trans-cat').value = trans.cat;
+            
+            // Tenta selecionar a conta pelo nome
+            const bank = DB.state.banks.find(b => b.name === trans.accName);
+            if (bank) document.getElementById('trans-account-select').value = bank.id;
+
+            // Ajusta UI
+            document.getElementById('btn-cancel-trans-edit').style.display = 'block';
+            document.getElementById('btn-income').innerText = 'Atualizar (Entrada)';
+            document.getElementById('btn-expense').innerText = 'Atualizar (Saída)';
+
+            // Rola até o formulário
+            document.getElementById('financeiro').scrollIntoView({ behavior: 'smooth' });
+        },
+
+        cancelEditTransaction() {
+            this.editingTransId = null;
+            document.getElementById('trans-desc').value = '';
+            document.getElementById('trans-val').value = '';
+            document.getElementById('btn-cancel-trans-edit').style.display = 'none';
+            document.getElementById('btn-income').innerHTML = '<i class="fas fa-arrow-up"></i> Entrada';
+            document.getElementById('btn-expense').innerHTML = '<i class="fas fa-arrow-down"></i> Saída';
         },
 
         deleteTransaction(id) {
@@ -1569,27 +1642,10 @@
                     else bank.balance += trans.val;
                 }
                 DB.state.transactions = DB.state.transactions.filter(t => t.id !== id);
-                DB.save();
-            }
-        },
-
-        editTransaction(id) {
-            const trans = DB.state.transactions.find(t => t.id === id);
-            if (!trans) return;
-            const novaDesc = prompt("Descrição:", trans.desc);
-            if (!novaDesc) return;
-            const novoValor = parseFloat(prompt("Valor:", trans.val));
-            
-            if (!isNaN(novoValor)) {
-                if (novoValor !== trans.val) {
-                    const bank = DB.state.banks.find(b => b.name === trans.accName);
-                    if (bank) {
-                        if (trans.type === 'income') bank.balance -= trans.val; else bank.balance += trans.val;
-                        if (trans.type === 'income') bank.balance += novoValor; else bank.balance -= novoValor;
-                    }
-                }
-                trans.desc = novaDesc;
-                trans.val = novoValor;
+                
+                // Se estava editando essa, cancela
+                if (this.editingTransId === id) this.cancelEditTransaction();
+                
                 DB.save();
             }
         },
@@ -1600,18 +1656,21 @@
             
             if(!list || !select) return;
 
-            // --- Renderiza Contas (Mantido igual) ---
+            // Renderiza Contas
             list.innerHTML = '';
+            // Salva a conta selecionada atualmente para não perder ao renderizar
+            const currentSelectedAcc = select.value;
             select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
-            if (DB.state.banks.length === 0) list.innerHTML = '<p style="color:#666; text-align:center;">Nenhuma conta.</p>';
             
+            if (DB.state.banks.length === 0) list.innerHTML = '<p style="color:#666; text-align:center;">Nenhuma conta.</p>';
+
             DB.state.banks.forEach(b => {
                 let brandClass = '';
                 const n = b.name.toLowerCase();
                 if (n.includes('itaú') || n.includes('itau')) brandClass = 'bank-itau';
                 else if (n.includes('btg')) brandClass = 'bank-btg';
                 else if (n.includes('caixa')) brandClass = 'bank-caixa';
-                
+
                 list.innerHTML += `
                     <div class="bank-card ${brandClass}">
                         <div class="bank-info"><h4 class="mono">${b.name}</h4><div class="bank-balance">R$ ${b.balance.toFixed(2)}</div></div>
@@ -1620,11 +1679,16 @@
                             <i class="fas fa-trash" onclick="FinanceModule.deleteAccount(${b.id})" style="cursor:pointer; color:#666;"></i>
                         </div>
                     </div>`;
+                
                 const opt = document.createElement('option');
-                opt.value = b.id; opt.innerText = b.name; select.appendChild(opt);
+                opt.value = b.id; opt.innerText = b.name; 
+                select.appendChild(opt);
             });
+            
+            // Restaura seleção se possível
+            if (currentSelectedAcc) select.value = currentSelectedAcc;
 
-            // --- RENDERIZAÇÃO DO HISTÓRICO (Com Alinhamento Fixo) ---
+            // Renderiza Histórico
             const log = document.getElementById('transaction-log');
             const filterEl = document.getElementById('trans-history-filter');
             const filterVal = filterEl ? filterEl.value : 'all';
@@ -1632,7 +1696,6 @@
             if(log) {
                 log.innerHTML = '';
 
-                // 1. Ordenar
                 const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
                     const dateA = a.date.split('/').reverse().join('-');
                     const dateB = b.date.split('/').reverse().join('-');
@@ -1641,51 +1704,38 @@
                     return b.id - a.id; 
                 });
 
-                // 2. Filtrar
                 const filteredTransactions = sortedTransactions.filter(t => {
                     if (filterVal === 'all') return true;
                     if (filterVal === 'income' || filterVal === 'expense') return t.type === filterVal;
                     return (t.cat || 'Outros') === filterVal;
                 });
 
-                // 3. Renderizar
                 filteredTransactions.slice(0, 30).forEach(t => {
                     const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
                     const sign = t.type === 'income' ? '+' : '-';
                     const category = t.cat || 'Outros';
-                    const iconClass = this.getCategoryIcon ? this.getCategoryIcon(category) : 'fa-circle';
+                    const iconClass = this.getCategoryIcon(category);
 
                     log.innerHTML += `
                         <div class="transaction-item fade-in" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
                             
                             <div style="display: flex; align-items: center; flex: 1; min-width: 0;">
-                                
-                                <div style="
-                                    width: 40px; 
-                                    height: 40px; 
-                                    border-radius: 10px; 
-                                    background: rgba(255,255,255,0.05); 
-                                    display: flex; 
-                                    align-items: center; 
-                                    justify-content: center; 
-                                    margin-right: 12px; 
-                                    flex-shrink: 0;">
+                                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                                     <i class="fas ${iconClass}" style="color: #888; font-size: 1rem;"></i>
                                 </div>
-
-                                <div style="min-width: 0; padding-right: 10px; overflow: hidden;">
+                                <div style="min-width: 0; padding-right: 10px;">
                                     <span class="trans-desc" style="display: block; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.desc}</span>
                                     <span class="trans-date" style="font-size: 0.75rem; color: #666; display: block; margin-top: 2px;">
-                                        ${t.date} • <span style="color:#888; font-weight:500;">${category}</span>
+                                        ${t.date} • ${category}
                                     </span>
                                 </div>
                             </div>
 
                             <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;">
                                 <div class="mono ${colorClass}" style="font-weight: 700; font-size: 0.9rem;">${sign} R$ ${t.val.toFixed(2)}</div>
-                                <div style="margin-top: 4px; display: flex; gap: 10px;">
-                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 0.8rem; color: #555;"></i>
-                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 0.8rem; color: #991b1b;"></i>
+                                <div style="margin-top: 6px; display: flex; gap: 15px;">
+                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666; padding: 2px;" title="Editar"></i>
+                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #ef4444; padding: 2px;" title="Excluir"></i>
                                 </div>
                             </div>
 
