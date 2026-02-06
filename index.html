@@ -923,7 +923,7 @@
                         <select id="bank-select" class="form-control">
                             <option value="Caixa Econômica">Caixa Econômica</option>
                             <option value="Itaú">Itaú</option>
-                            <option value="BTG Pactual Banking">BTG Pactual Banking</option>
+                            <option value="BTG Pactual">BTG Pactual Banking</option>
                         </select>
                         <input type="number" id="bank-balance-init" class="form-control" placeholder="Saldo Inicial (R$)">
                         <button class="btn-primary" onclick="FinanceModule.addAccount()">Salvar</button>
@@ -1077,34 +1077,59 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        flex-direction: column; /* Em telas pequenas, empilha título e filtros */
-                        gap: 10px; 
+                        flex-direction: column; 
+                        gap: 12px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
-                        padding-bottom: 10px;">
+                        padding-bottom: 15px;">
                         
-                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
-                            <span class="card-title" style="margin: 0; white-space: nowrap;">HISTÓRICO</span>
-                            <small style="color: #666; font-size: 0.7rem;">FILTRAR POR:</small>
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <span class="card-title" style="margin: 0;">HISTÓRICO</span>
+                            <span style="font-size: 0.7rem; color: #666; font-weight: 600; text-transform: uppercase;">
+                                <i class="fas fa-filter" style="margin-right: 4px;"></i> Filtros
+                            </span>
                         </div>
 
-                        <div style="width: 100%; display: flex; gap: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
                             
-                            <div style="position: relative; flex: 1;"> <select id="filter-type" class="form-control" style="
-                                    width: 100%; height: 32px; padding: 0 5px; margin: 0; 
-                                    font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                    border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                            <div style="position: relative;">
+                                <select id="filter-type" class="form-control" style="
+                                    width: 100%; 
+                                    height: 35px; 
+                                    padding: 0 10px; 
+                                    margin: 0; 
+                                    font-size: 0.8rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    appearance: none;
+                                    -webkit-appearance: none;"
                                     onchange="FinanceModule.render()">
                                     <option value="all">Tipo: Todos</option>
                                     <option value="income">Entradas (Verde)</option>
                                     <option value="expense">Saídas (Vermelho)</option>
                                 </select>
+                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                             </div>
 
-                            <div style="position: relative; flex: 1;"> <select id="filter-cat" class="form-control" style="
-                                    width: 100%; height: 32px; padding: 0 5px; margin: 0; 
-                                    font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                    border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                            <div style="position: relative;">
+                                <select id="filter-cat" class="form-control" style="
+                                    width: 100%; 
+                                    height: 35px; 
+                                    padding: 0 10px; 
+                                    margin: 0; 
+                                    font-size: 0.8rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    appearance: none;
+                                    -webkit-appearance: none;"
                                     onchange="FinanceModule.render()">
                                     <option value="all">Cat: Todas</option>
                                     <option value="Outros">📦 Outros</option>
@@ -1112,12 +1137,13 @@
                                     <option value="Transporte">🚗 Transporte</option>
                                     <option value="Moradia">🏠 Moradia</option>
                                     <option value="Educação">📚 Educação</option>
-                                    <option value="Lazer/Assinaturas">🎬 Lazer</option>
-                                    <option value="Saúde/Cuidados">💊 Saúde</option>
+                                    <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                    <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
                                     <option value="Compras">🛒 Compras</option>
                                     <option value="Investimento">💰 Investimento</option>
-                                    <option value="Salário">💼 Renda</option>
+                                    <option value="Salário">💼 Salário/Renda</option>
                                 </select>
+                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                             </div>
                         </div>
                     </div>
