@@ -1072,44 +1072,66 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        justify-content: space-between; 
-                        align-items: center; 
+                        align-items: center; /* Alinhamento vertical perfeito */
+                        justify-content: space-between; /* Separa nas pontas */
                         margin-bottom: 15px; 
                         padding-bottom: 10px; 
-                        border-bottom: 1px solid rgba(255,255,255,0.05);
-                        flex-wrap: wrap; 
-                        gap: 10px;">
+                        border-bottom: 1px solid rgba(255,255,255,0.05);">
                         
-                        <span class="card-title" style="white-space: nowrap;">Histórico Recente</span>
+                        <span class="card-title" style="margin: 0; font-size: 0.85rem; letter-spacing: 1px;">HISTÓRICO</span>
                         
-                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; min-width: 200px;">
-                            <label for="trans-history-filter" style="font-size: 0.75rem; color: #888; white-space: nowrap;">Filtrar por:</label>
+                        <div style="position: relative; width: 140px;">
+                            <i class="fas fa-filter" style="
+                                position: absolute; 
+                                left: 10px; 
+                                top: 50%; 
+                                transform: translateY(-50%); 
+                                font-size: 0.7rem; 
+                                color: var(--color-primary); 
+                                pointer-events: none;">
+                            </i>
+
                             <select id="trans-history-filter" class="form-control" style="
                                 width: 100%; 
-                                max-width: 160px; 
                                 height: 32px; 
-                                padding: 0 8px; 
-                                font-size: 0.8rem; 
+                                line-height: 32px;
+                                padding: 0 25px 0 28px; /* Espaço para ícones */
+                                font-size: 0.75rem; 
                                 margin-bottom: 0; 
-                                background-color: rgba(0,0,0,0.3);
-                                border-color: rgba(255,255,255,0.1);" 
+                                background-color: rgba(255,255,255,0.05);
+                                border: 1px solid rgba(255,255,255,0.1);
+                                border-radius: 6px;
+                                color: #eee;
+                                appearance: none; /* Remove seta padrão feia */
+                                -webkit-appearance: none;" 
                                 onchange="FinanceModule.render()">
-                                <option value="all">Tudo</option>
-                                <option disabled>─── TIPO ───</option>
+                                
+                                <option value="all">Filtro: Todos</option>
+                                <option disabled>── TIPO ──</option>
                                 <option value="income">Entradas (Verde)</option>
                                 <option value="expense">Saídas (Vermelho)</option>
-                                <option disabled>─── CATEGORIA ───</option>
+                                <option disabled>── CATEGORIA ──</option>
                                 <option value="Alimentação">🍔 Alimentação</option>
                                 <option value="Transporte">🚗 Transporte</option>
                                 <option value="Moradia">🏠 Moradia</option>
                                 <option value="Educação">📚 Educação</option>
-                                <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
-                                <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                <option value="Lazer/Assinaturas">🎬 Lazer</option>
+                                <option value="Saúde/Cuidados">💊 Saúde</option>
                                 <option value="Compras">🛒 Compras</option>
                                 <option value="Investimento">💰 Investimento</option>
-                                <option value="Salário">💼 Salário</option>
+                                <option value="Salário">💼 Renda</option>
                                 <option value="Outros">📦 Outros</option>
                             </select>
+
+                            <i class="fas fa-chevron-down" style="
+                                position: absolute; 
+                                right: 10px; 
+                                top: 50%; 
+                                transform: translateY(-50%); 
+                                font-size: 0.6rem; 
+                                color: #666; 
+                                pointer-events: none;">
+                            </i>
                         </div>
                     </div>
                     <div id="transaction-log" class="transaction-list"></div>
