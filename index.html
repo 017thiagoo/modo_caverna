@@ -1027,7 +1027,7 @@
                     <div id="fixed-list-container" class="habit-grid-container"></div>
                 </div>
 
-                <div class="card col-6">
+                <div class="card col-6" id="card-operacoes">
                     <div class="card-header">
                         <span class="card-title">Registro de Operações</span>
                     </div>
@@ -1470,9 +1470,9 @@
         }
     };
 
-    // --- 3. FINANCE MODULE (ATUALIZADO: EDIÇÃO COMPLETA + ÍCONES MAIORES) ---
+    // --- 3. FINANCE MODULE (ATUALIZADO: SCROLL CORRETO + ÍCONES PADRONIZADOS) ---
     const FinanceModule = {
-        editingTransId: null, // Variável para controlar se estamos editando
+        editingTransId: null,
 
         init() {
             const today = new Date().toISOString().split('T')[0];
@@ -1529,7 +1529,6 @@
             }
         },
 
-        // Função Principal: Adicionar ou Atualizar Transação
         addTransaction(type) {
             const desc = document.getElementById('trans-desc').value;
             const val = parseFloat(document.getElementById('trans-val').value);
@@ -1544,24 +1543,24 @@
             const bank = DB.state.banks.find(b => b.id === accId);
             if (!bank) return alert("Conta não encontrada.");
 
-            // --- LÓGICA DE EDIÇÃO ---
             if (this.editingTransId) {
+                // MODO EDIÇÃO
                 const transIndex = DB.state.transactions.findIndex(t => t.id === this.editingTransId);
                 if (transIndex > -1) {
                     const oldTrans = DB.state.transactions[transIndex];
                     
-                    // 1. Reverter saldo da conta antiga
+                    // 1. Estorna saldo antigo
                     const oldBank = DB.state.banks.find(b => b.name === oldTrans.accName);
                     if (oldBank) {
                         if (oldTrans.type === 'income') oldBank.balance -= oldTrans.val;
                         else oldBank.balance += oldTrans.val;
                     }
 
-                    // 2. Aplicar novo saldo na conta nova (ou a mesma)
+                    // 2. Aplica novo saldo
                     if (type === 'income') bank.balance += val;
                     else bank.balance -= val;
 
-                    // 3. Atualizar dados da transação
+                    // 3. Atualiza dados
                     const [ano, mes, dia] = dateVal.split('-');
                     DB.state.transactions[transIndex] = {
                         ...oldTrans,
@@ -1570,11 +1569,10 @@
                         accName: bank.name
                     };
 
-                    this.cancelEditTransaction(); // Sai do modo edição
+                    this.cancelEditTransaction();
                 }
-            } 
-            // --- LÓGICA DE ADIÇÃO (NOVA) ---
-            else {
+            } else {
+                // MODO ADIÇÃO
                 if (type === 'income') bank.balance += val;
                 else bank.balance -= val;
 
@@ -1586,7 +1584,6 @@
                     accName: bank.name
                 });
 
-                // Limpa campos apenas se for nova inclusão
                 document.getElementById('trans-desc').value = '';
                 document.getElementById('trans-val').value = '';
             }
@@ -1594,34 +1591,38 @@
             DB.save();
         },
 
-        // Entrar no modo de edição
         editTransaction(id) {
             const trans = DB.state.transactions.find(t => t.id === id);
             if (!trans) return;
 
             this.editingTransId = id;
 
-            // Preenche o formulário
+            // Preenche campos
             document.getElementById('trans-desc').value = trans.desc;
             document.getElementById('trans-val').value = trans.val;
             
-            // Converte data de dd/mm/aaaa para aaaa-mm-dd para o input
+            // Data
             const parts = trans.date.split('/');
             document.getElementById('trans-date').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
             
-            if (trans.cat) document.getElementById('trans-cat').value = trans.cat;
-            
-            // Tenta selecionar a conta pelo nome
+            // Categoria (Correção do Bug)
+            const catSelect = document.getElementById('trans-cat');
+            catSelect.value = trans.cat || 'Outros'; 
+
+            // Conta
             const bank = DB.state.banks.find(b => b.name === trans.accName);
             if (bank) document.getElementById('trans-account-select').value = bank.id;
 
-            // Ajusta UI
+            // UI
             document.getElementById('btn-cancel-trans-edit').style.display = 'block';
             document.getElementById('btn-income').innerText = 'Atualizar (Entrada)';
             document.getElementById('btn-expense').innerText = 'Atualizar (Saída)';
 
-            // Rola até o formulário
-            document.getElementById('financeiro').scrollIntoView({ behavior: 'smooth' });
+            // SCROLL CORRETO: Vai para o cartão de operações
+            const cardOperacoes = document.getElementById('card-operacoes');
+            if (cardOperacoes) {
+                cardOperacoes.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         },
 
         cancelEditTransaction() {
@@ -1643,7 +1644,6 @@
                 }
                 DB.state.transactions = DB.state.transactions.filter(t => t.id !== id);
                 
-                // Se estava editando essa, cancela
                 if (this.editingTransId === id) this.cancelEditTransaction();
                 
                 DB.save();
@@ -1658,19 +1658,18 @@
 
             // Renderiza Contas
             list.innerHTML = '';
-            // Salva a conta selecionada atualmente para não perder ao renderizar
             const currentSelectedAcc = select.value;
             select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
             
             if (DB.state.banks.length === 0) list.innerHTML = '<p style="color:#666; text-align:center;">Nenhuma conta.</p>';
-
+            
             DB.state.banks.forEach(b => {
                 let brandClass = '';
                 const n = b.name.toLowerCase();
                 if (n.includes('itaú') || n.includes('itau')) brandClass = 'bank-itau';
                 else if (n.includes('btg')) brandClass = 'bank-btg';
                 else if (n.includes('caixa')) brandClass = 'bank-caixa';
-
+                
                 list.innerHTML += `
                     <div class="bank-card ${brandClass}">
                         <div class="bank-info"><h4 class="mono">${b.name}</h4><div class="bank-balance">R$ ${b.balance.toFixed(2)}</div></div>
@@ -1679,13 +1678,9 @@
                             <i class="fas fa-trash" onclick="FinanceModule.deleteAccount(${b.id})" style="cursor:pointer; color:#666;"></i>
                         </div>
                     </div>`;
-                
                 const opt = document.createElement('option');
-                opt.value = b.id; opt.innerText = b.name; 
-                select.appendChild(opt);
+                opt.value = b.id; opt.innerText = b.name; select.appendChild(opt);
             });
-            
-            // Restaura seleção se possível
             if (currentSelectedAcc) select.value = currentSelectedAcc;
 
             // Renderiza Histórico
@@ -1696,6 +1691,7 @@
             if(log) {
                 log.innerHTML = '';
 
+                // Ordenar
                 const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
                     const dateA = a.date.split('/').reverse().join('-');
                     const dateB = b.date.split('/').reverse().join('-');
@@ -1704,12 +1700,14 @@
                     return b.id - a.id; 
                 });
 
+                // Filtrar
                 const filteredTransactions = sortedTransactions.filter(t => {
                     if (filterVal === 'all') return true;
                     if (filterVal === 'income' || filterVal === 'expense') return t.type === filterVal;
                     return (t.cat || 'Outros') === filterVal;
                 });
 
+                // Renderizar
                 filteredTransactions.slice(0, 30).forEach(t => {
                     const colorClass = t.type === 'income' ? 'amount-inc' : 'amount-exp';
                     const sign = t.type === 'income' ? '+' : '-';
@@ -1723,22 +1721,22 @@
                                 <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                                     <i class="fas ${iconClass}" style="color: #888; font-size: 1rem;"></i>
                                 </div>
-                                <div style="min-width: 0; padding-right: 10px;">
+                                <div style="min-width: 0; padding-right: 10px; overflow: hidden;">
                                     <span class="trans-desc" style="display: block; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.desc}</span>
                                     <span class="trans-date" style="font-size: 0.75rem; color: #666; display: block; margin-top: 2px;">
-                                        ${t.date} • ${category}
+                                        ${t.date} • <span style="color:#888; font-weight:500;">${category}</span>
                                     </span>
                                 </div>
                             </div>
 
                             <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;">
                                 <div class="mono ${colorClass}" style="font-weight: 700; font-size: 0.9rem;">${sign} R$ ${t.val.toFixed(2)}</div>
+                                
                                 <div style="margin-top: 6px; display: flex; gap: 15px;">
-                                    <i class="fas fa-pencil-alt" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666; padding: 2px;" title="Editar"></i>
-                                    <i class="fas fa-trash-alt" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #ef4444; padding: 2px;" title="Excluir"></i>
+                                    <i class="fas fa-pen" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 0.9rem; color: #888;" title="Editar"></i>
+                                    <i class="fas fa-trash" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666;" title="Excluir"></i>
                                 </div>
                             </div>
-
                         </div>
                     `;
                 });
