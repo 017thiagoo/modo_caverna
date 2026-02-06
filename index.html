@@ -1591,6 +1591,7 @@
             DB.save();
         },
 
+        // Entrar no modo de edição (Scroll Ajustado para o Topo)
         editTransaction(id) {
             const trans = DB.state.transactions.find(t => t.id === id);
             if (!trans) return;
@@ -1605,7 +1606,7 @@
             const parts = trans.date.split('/');
             document.getElementById('trans-date').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
             
-            // Categoria (Correção do Bug)
+            // Categoria
             const catSelect = document.getElementById('trans-cat');
             catSelect.value = trans.cat || 'Outros'; 
 
@@ -1618,10 +1619,11 @@
             document.getElementById('btn-income').innerText = 'Atualizar (Entrada)';
             document.getElementById('btn-expense').innerText = 'Atualizar (Saída)';
 
-            // SCROLL CORRETO: Vai para o cartão de operações
+            // SCROLL MAIS ALTO: Rola para o topo do cartão
             const cardOperacoes = document.getElementById('card-operacoes');
             if (cardOperacoes) {
-                cardOperacoes.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // block: 'start' força o elemento a ir para o topo da tela
+                cardOperacoes.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         },
 
@@ -1714,6 +1716,7 @@
                     const category = t.cat || 'Outros';
                     const iconClass = this.getCategoryIcon(category);
 
+                    // ADICIONADO: t.accName (Nome do Banco) no HTML abaixo
                     log.innerHTML += `
                         <div class="transaction-item fade-in" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
                             
@@ -1724,7 +1727,7 @@
                                 <div style="min-width: 0; padding-right: 10px; overflow: hidden;">
                                     <span class="trans-desc" style="display: block; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.desc}</span>
                                     <span class="trans-date" style="font-size: 0.75rem; color: #666; display: block; margin-top: 2px;">
-                                        ${t.date} • <span style="color:#888; font-weight:500;">${category}</span>
+                                        ${t.date} • ${category} • <span style="color:var(--color-text-main); font-weight:500;">${t.accName}</span>
                                     </span>
                                 </div>
                             </div>
@@ -1733,8 +1736,8 @@
                                 <div class="mono ${colorClass}" style="font-weight: 700; font-size: 0.9rem;">${sign} R$ ${t.val.toFixed(2)}</div>
                                 
                                 <div style="margin-top: 6px; display: flex; gap: 15px;">
-                                    <i class="fas fa-pen" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 0.9rem; color: #888;" title="Editar"></i>
-                                    <i class="fas fa-trash" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666;" title="Excluir"></i>
+                                    <i class="fas fa-pen" onclick="FinanceModule.editTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #666;" title="Editar"></i>
+                                    <i class="fas fa-trash" onclick="FinanceModule.deleteTransaction(${t.id})" style="cursor: pointer; font-size: 1.1rem; color: #ef4444;" title="Excluir"></i>
                                 </div>
                             </div>
                         </div>
