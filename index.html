@@ -1077,23 +1077,38 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        flex-direction: column; /* Empilha Título em cima, Filtros embaixo */
-                        gap: 8px; 
+                        flex-direction: column; 
+                        align-items: flex-start; /* ALINHA TÍTULO À ESQUERDA */
+                        gap: 10px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
                         padding-bottom: 10px;">
                         
-                        <span class="card-title" style="margin: 0;">HISTÓRICO RECENTE</span>
+                        <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
 
-                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            <span style="font-size: 0.75rem; color: #888; font-weight: 600; white-space: nowrap;">Filtrar por:</span>
+                        <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                            
+                            <span style="font-size: 0.75rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                Filtrar por:
+                            </span>
                             
                             <div style="display: flex; gap: 8px; flex: 1;">
                                 <div style="position: relative; flex: 1;">
                                     <select id="filter-type" class="form-control" style="
-                                        width: 100%; height: 30px; padding: 0 5px; margin: 0; 
-                                        font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                        border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                                        width: 100%; 
+                                        height: 30px; 
+                                        padding: 0; /* Remove preenchimento extra */
+                                        margin: 0; 
+                                        font-size: 0.75rem; 
+                                        background: rgba(255,255,255,0.05); 
+                                        border: 1px solid rgba(255,255,255,0.1); 
+                                        color: #eee; 
+                                        outline: none; 
+                                        cursor: pointer;
+                                        text-align: center;
+                                        text-align-last: center;
+                                        -webkit-appearance: none; /* Tira a seta no Chrome/Safari */
+                                        appearance: none;         /* Tira a seta no padrão */"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Tipo: Todos</option>
                                         <option value="income">Entradas</option>
@@ -1103,9 +1118,20 @@
 
                                 <div style="position: relative; flex: 1;">
                                     <select id="filter-cat" class="form-control" style="
-                                        width: 100%; height: 30px; padding: 0 5px; margin: 0; 
-                                        font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                        border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                                        width: 100%; 
+                                        height: 30px; 
+                                        padding: 0; /* Remove preenchimento extra */
+                                        margin: 0; 
+                                        font-size: 0.75rem; 
+                                        background: rgba(255,255,255,0.05); 
+                                        border: 1px solid rgba(255,255,255,0.1); 
+                                        color: #eee; 
+                                        outline: none; 
+                                        cursor: pointer;
+                                        text-align: center;
+                                        text-align-last: center;
+                                        -webkit-appearance: none; /* Tira a seta no Chrome/Safari */
+                                        appearance: none;         /* Tira a seta no padrão */"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Cat: Todas</option>
                                         <option value="Outros">📦 Outros</option>
