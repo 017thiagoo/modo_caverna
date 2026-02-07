@@ -1077,35 +1077,58 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        flex-direction: column; /* Empilha Título em cima, Filtros embaixo */
-                        gap: 8px; 
+                        flex-direction: column; /* Um item debaixo do outro */
+                        align-items: flex-start; /* Força alinhamento à ESQUERDA */
+                        gap: 12px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
-                        padding-bottom: 10px;">
+                        padding-bottom: 15px;">
                         
-                        <span class="card-title" style="margin: 0;">HISTÓRICO RECENTE</span>
+                        <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
 
                         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            <span style="font-size: 0.75rem; color: #888; font-weight: 600; white-space: nowrap;">Filtrar por:</span>
                             
-                            <div style="display: flex; gap: 8px; flex: 1;">
-                                <div style="position: relative; flex: 1;">
+                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                                Filtrar por:
+                            </span>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1;">
+                                
+                                <div style="position: relative;">
                                     <select id="filter-type" class="form-control" style="
-                                        width: 100%; height: 30px; padding: 0 5px; margin: 0; 
-                                        font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                        border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                                        width: 100%; 
+                                        height: 35px; 
+                                        padding: 0 5px; 
+                                        margin: 0; 
+                                        font-size: 0.75rem; 
+                                        background: rgba(255,255,255,0.03); 
+                                        border: 1px solid rgba(255,255,255,0.1); 
+                                        border-radius: 6px; 
+                                        color: #eee; 
+                                        outline: none; 
+                                        cursor: pointer;
+                                        appearance: none; -webkit-appearance: none;"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Tipo: Todos</option>
-                                        <option value="income">Entradas</option>
-                                        <option value="expense">Saídas</option>
+                                        <option value="income">Entradas (Verde)</option>
+                                        <option value="expense">Saídas (Vermelho)</option>
                                     </select>
                                 </div>
 
-                                <div style="position: relative; flex: 1;">
+                                <div style="position: relative;">
                                     <select id="filter-cat" class="form-control" style="
-                                        width: 100%; height: 30px; padding: 0 5px; margin: 0; 
-                                        font-size: 0.75rem; background: rgba(255,255,255,0.05); 
-                                        border: 1px solid rgba(255,255,255,0.1); color: #eee; outline: none; cursor: pointer;"
+                                        width: 100%; 
+                                        height: 35px; 
+                                        padding: 0 5px; 
+                                        margin: 0; 
+                                        font-size: 0.75rem; 
+                                        background: rgba(255,255,255,0.03); 
+                                        border: 1px solid rgba(255,255,255,0.1); 
+                                        border-radius: 6px; 
+                                        color: #eee; 
+                                        outline: none; 
+                                        cursor: pointer;
+                                        appearance: none; -webkit-appearance: none;"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Cat: Todas</option>
                                         <option value="Outros">📦 Outros</option>
@@ -1113,11 +1136,11 @@
                                         <option value="Transporte">🚗 Transporte</option>
                                         <option value="Moradia">🏠 Moradia</option>
                                         <option value="Educação">📚 Educação</option>
-                                        <option value="Lazer/Assinaturas">🎬 Lazer</option>
-                                        <option value="Saúde/Cuidados">💊 Saúde</option>
+                                        <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                        <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
                                         <option value="Compras">🛒 Compras</option>
                                         <option value="Investimento">💰 Investimento</option>
-                                        <option value="Salário">💼 Salário</option>
+                                        <option value="Salário">💼 Salário/Renda</option>
                                     </select>
                                 </div>
                             </div>
