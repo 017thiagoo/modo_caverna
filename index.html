@@ -944,11 +944,17 @@
 
                     <div id="inc-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
                         <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição (ex: Salário)" style="margin-bottom:0; flex:2;">
-                            <input type="number" id="inc-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
+                            <input type="text" id="inc-name" class="form-control" placeholder="Descrição (ex: Salário)" style="margin-bottom:0; flex:1.5;">
+                            
+                            <select id="inc-cat" class="form-control" style="margin-bottom:0; flex:1;">
+                                <option value="Salário">💼 Salário/Renda</option>
+                                <option value="Investimento">💰 Investimento</option>
+                                <option value="Outros">📦 Outros</option>
+                            </select>
                         </div>
                         
                         <div class="date-time-wrapper" style="display:flex; gap:10px; align-items: center; margin-bottom: 0;">
+                            <input type="number" id="inc-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
                             <input type="date" id="inc-date" class="form-control" style="margin-bottom:0; flex: 1;">
                             <button id="btn-save-inc" class="btn-primary" onclick="FixedIncomeModule.save()" style="width: auto; background: var(--color-success); margin-bottom: 0; padding: 0 20px; flex: 1;">
                                 Salvar
@@ -992,10 +998,22 @@
 
                     <div id="fixed-add-form" class="hidden" style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">
                         <div class="input-group-row" style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="fixed-name" class="form-control" placeholder="Nome (ex: Aluguel)" style="margin-bottom:0; flex:2;">
-                            <input type="number" id="fixed-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
+                            <input type="text" id="fixed-name" class="form-control" placeholder="Nome (ex: Aluguel)" style="margin-bottom:0; flex:1.5;">
+                            
+                            <select id="fixed-cat" class="form-control" style="margin-bottom:0; flex:1;">
+                                <option value="Outros">📦 Outros</option>
+                                <option value="Alimentação">🍔 Alimentação</option>
+                                <option value="Transporte">🚗 Transporte</option>
+                                <option value="Moradia">🏠 Moradia</option>
+                                <option value="Educação">📚 Educação</option>
+                                <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                <option value="Compras">🛒 Compras</option>
+                            </select>
                         </div>
+
                         <div class="date-time-wrapper" style="display:flex; gap:10px; align-items: center; margin-bottom: 0;">
+                            <input type="number" id="fixed-val" class="form-control" placeholder="Valor (R$)" style="margin-bottom:0; flex:1;">
                             <input type="date" id="fixed-date" class="form-control" style="margin-bottom:0; flex:1;">
                             <input type="time" id="fixed-time" class="form-control" style="margin-bottom:0; width: 80px;">
                             <button id="btn-save-fix" class="btn-primary" onclick="FixedExpensesModule.save()" style="width: auto; margin-bottom: 0; padding: 0 20px; flex: 1;">
@@ -1827,7 +1845,7 @@
         }
     };
 
-    // --- 3.5 MÓDULO RECEITAS (CORRIGIDO: SEM MENU DE BANCO) ---
+    // --- 3.5 MÓDULO RECEITAS (ATUALIZADO COM CATEGORIAS) ---
     const FixedIncomeModule = {
         editingId: null,
 
@@ -1835,21 +1853,21 @@
             const name = document.getElementById('inc-name').value;
             const val = parseFloat(document.getElementById('inc-val').value);
             const date = document.getElementById('inc-date').value;
+            const cat = document.getElementById('inc-cat').value; // Pega Categoria
 
             if (name && !isNaN(val)) {
                 if (this.editingId) {
-                    // MODO EDIÇÃO
                     const item = DB.state.incomes.find(e => e.id === this.editingId);
                     if (item) {
                         item.name = name;
                         item.val = val;
                         item.date = date;
+                        item.cat = cat; // Salva Categoria
                     }
                     this.editingId = null;
-                    document.getElementById('btn-save-inc').innerText = 'Salvar Conta';
+                    document.getElementById('btn-save-inc').innerText = 'Salvar';
                 } else {
-                    // MODO CRIAÇÃO (Sem bankId)
-                    DB.state.incomes.push({ id: Date.now(), name, val, date, received: false });
+                    DB.state.incomes.push({ id: Date.now(), name, val, date, cat, received: false });
                 }
 
                 document.getElementById('inc-name').value = '';
@@ -1869,8 +1887,9 @@
                 document.getElementById('inc-name').value = item.name;
                 document.getElementById('inc-val').value = item.val;
                 document.getElementById('inc-date').value = item.date;
+                document.getElementById('inc-cat').value = item.cat || 'Salário'; // Carrega Categoria
                 
-                document.getElementById('btn-save-inc').innerText = 'Atualizar Receita';
+                document.getElementById('btn-save-inc').innerText = 'Atualizar';
                 
                 const form = document.getElementById('inc-add-form');
                 if (form.classList.contains('hidden')) form.classList.remove('hidden');
@@ -1882,7 +1901,7 @@
             this.editingId = null;
             document.getElementById('inc-name').value = '';
             document.getElementById('inc-val').value = '';
-            document.getElementById('btn-save-inc').innerText = 'Salvar Conta';
+            document.getElementById('btn-save-inc').innerText = 'Salvar';
             UI.toggle('inc-add-form');
         },
 
@@ -1890,7 +1909,6 @@
             const inc = DB.state.incomes.find(e => e.id === id);
             if (inc) {
                 if (!inc.received) {
-                    // LÓGICA AUTOMÁTICA: Busca o Itaú
                     const itau = DB.state.banks.find(b => b.name.toLowerCase().includes('itaú') || b.name.toLowerCase().includes('itau'));
                     if(!itau) return alert("Cadastre a conta Itaú primeiro!");
 
@@ -1899,7 +1917,16 @@
                         itau.balance += inc.val;
                         
                         const today = new Date().toLocaleDateString('pt-BR');
-                        DB.state.transactions.unshift({ id: Date.now(), date: today, desc: `Receita Fixa: ${inc.name}`, val: inc.val, type: 'income', accName: itau.name });
+                        // AQUI: Passa a categoria correta para o histórico
+                        DB.state.transactions.unshift({ 
+                            id: Date.now(), 
+                            date: today, 
+                            desc: `Receita Fixa: ${inc.name}`, 
+                            val: inc.val, 
+                            type: 'income', 
+                            accName: itau.name,
+                            cat: inc.cat || 'Salário' 
+                        });
                         DB.save();
                     }
                 } else {
@@ -1930,17 +1957,23 @@
                 if(e.received) received += e.val;
 
                 const statusColor = 'var(--color-success)'; 
-                const icon = e.received ? 'fa-check-circle' : 'fa-circle';
+                const checkIcon = e.received ? 'fa-check-circle' : 'fa-circle';
                 const opacity = e.received ? '0.5' : '1';
                 const date = e.date ? e.date.split('-').reverse().join('/') : 'S/D';
+                
+                // Ícone da categoria
+                const catIcon = FinanceModule.getCategoryIcon(e.cat || 'Salário');
 
                 list.innerHTML += `
                     <div class="habit-card-mini fade-in" style="opacity:${opacity}; border-left:3px solid ${statusColor}; padding:15px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div style="display:flex; align-items:center; gap:15px;">
-                                <i class="far ${icon}" onclick="FixedIncomeModule.toggle(${e.id})" style="color:${statusColor}; cursor:pointer; font-size:1.5rem;"></i>
+                                <i class="far ${checkIcon}" onclick="FixedIncomeModule.toggle(${e.id})" style="color:${statusColor}; cursor:pointer; font-size:1.5rem;"></i>
                                 <div>
-                                    <span style="font-weight:600; display:block;">${e.name}</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <i class="fas ${catIcon}" style="font-size:0.8rem; color:#888;"></i>
+                                        <span style="font-weight:600;">${e.name}</span>
+                                    </div>
                                     <span style="color:var(--color-success); font-weight:bold;">+ R$ ${e.val.toFixed(2)}</span>
                                     <small style="color:#888; display:block; margin-top:2px;">Prev: ${date}</small>
                                 </div>
@@ -1967,7 +2000,7 @@
         }
     };
 
-    // --- 4. FIXED EXPENSES MODULE (CORRIGIDO: PAGAMENTO AUTOMÁTICO ITAÚ) ---
+    // --- 4. MÓDULO GASTOS FIXOS (ATUALIZADO COM CATEGORIAS) ---
     const FixedExpensesModule = {
         editingId: null,
 
@@ -1976,6 +2009,7 @@
             const val = parseFloat(document.getElementById('fixed-val').value);
             const date = document.getElementById('fixed-date').value;
             const time = document.getElementById('fixed-time').value;
+            const cat = document.getElementById('fixed-cat').value; // Pega Categoria
 
             if (name && !isNaN(val)) {
                 if (this.editingId) {
@@ -1985,11 +2019,12 @@
                         item.val = val;
                         item.date = date;
                         item.time = time;
+                        item.cat = cat; // Salva
                     }
                     this.editingId = null;
-                    document.getElementById('btn-save-fix').innerText = 'Salvar Conta';
+                    document.getElementById('btn-save-fix').innerText = 'Salvar';
                 } else {
-                    DB.state.fixed.push({ id: Date.now(), name, val, date, time, paid: false });
+                    DB.state.fixed.push({ id: Date.now(), name, val, date, time, cat, paid: false });
                 }
 
                 document.getElementById('fixed-name').value = '';
@@ -2010,8 +2045,9 @@
                 document.getElementById('fixed-val').value = item.val;
                 document.getElementById('fixed-date').value = item.date;
                 document.getElementById('fixed-time').value = item.time;
+                document.getElementById('fixed-cat').value = item.cat || 'Moradia'; // Carrega
                 
-                document.getElementById('btn-save-fix').innerText = 'Atualizar Gasto';
+                document.getElementById('btn-save-fix').innerText = 'Atualizar';
                 
                 const form = document.getElementById('fixed-add-form');
                 if (form.classList.contains('hidden')) form.classList.remove('hidden');
@@ -2023,7 +2059,7 @@
             this.editingId = null;
             document.getElementById('fixed-name').value = '';
             document.getElementById('fixed-val').value = '';
-            document.getElementById('btn-save-fix').innerText = 'Salvar Conta';
+            document.getElementById('btn-save-fix').innerText = 'Salvar';
             UI.toggle('fixed-add-form');
         },
 
@@ -2031,7 +2067,6 @@
             const expense = DB.state.fixed.find(e => e.id === id);
             if (expense) {
                 if (!expense.paid) {
-                    // --- AUTOMÁTICO: BUSCA ITAÚ ---
                     const itau = DB.state.banks.find(b => b.name.toLowerCase().includes('itaú') || b.name.toLowerCase().includes('itau'));
                     
                     if (!itau) return alert("Cadastre a conta Itaú primeiro!");
@@ -2041,13 +2076,15 @@
                         itau.balance -= expense.val;
                         
                         const today = new Date().toLocaleDateString('pt-BR');
+                        // AQUI: Passa a categoria correta para o histórico
                         DB.state.transactions.unshift({
                             id: Date.now(),
                             date: today,
                             desc: `Pgto Fixo: ${expense.name}`,
                             val: expense.val,
                             type: 'expense',
-                            accName: itau.name
+                            accName: itau.name,
+                            cat: expense.cat || 'Moradia' 
                         });
                         DB.save();
                     }
@@ -2107,6 +2144,9 @@
                 const opacity = e.paid ? '0.5' : '1';
                 const calendarBtn = (e.date && e.time && !e.paid) ? `<button onclick="FixedExpensesModule.exportToCalendar(${e.id})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; margin-right:5px;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` : '';
                 const dateTimeDisplay = e.date ? `<small style="color:#888; display:block;">Venc: ${e.date.split('-').reverse().join('/')} ${e.time||''}</small>` : '<small style="color:#888;">Sem data</small>';
+                
+                // Ícone da categoria
+                const catIcon = FinanceModule.getCategoryIcon(e.cat || 'Moradia');
 
                 list.innerHTML += `
                     <div class="habit-card-mini fade-in" style="opacity: ${opacity}; border-left: 3px solid ${statusColor}; padding: 15px;">
@@ -2114,7 +2154,10 @@
                             <div style="display:flex; align-items:center; gap:15px;">
                                 <i class="far ${statusIcon}" onclick="FixedExpensesModule.toggle(${e.id})" style="color:${statusColor}; cursor:pointer; font-size:1.5rem;"></i>
                                 <div>
-                                    <span style="font-weight:600; display:block;">${e.name}</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <i class="fas ${catIcon}" style="font-size:0.8rem; color:#888;"></i>
+                                        <span style="font-weight:600;">${e.name}</span>
+                                    </div>
                                     <span style="color:${statusColor}; font-weight:bold;">R$ ${e.val.toFixed(2)}</span>
                                     ${dateTimeDisplay}
                                 </div>
