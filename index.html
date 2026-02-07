@@ -1077,72 +1077,73 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        flex-direction: column; /* Um item debaixo do outro */
-                        align-items: flex-start; /* Força alinhamento à ESQUERDA */
+                        flex-direction: column; 
                         gap: 12px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
                         padding-bottom: 15px;">
                         
-                        <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
-
-                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                            
-                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
-                                Filtrar por:
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <span class="card-title" style="margin: 0;">HISTÓRICO</span>
+                            <span style="font-size: 0.7rem; color: #666; font-weight: 600; text-transform: uppercase;">
+                                <i class="fas fa-filter" style="margin-right: 4px;"></i> Filtros
                             </span>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1;">
-                                
-                                <div style="position: relative;">
-                                    <select id="filter-type" class="form-control" style="
-                                        width: 100%; 
-                                        height: 25px; 
-                                        padding: 0 5px; 
-                                        margin: 0; 
-                                        font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
-                                        border: 1px solid rgba(255,255,255,0.1); 
-                                        border-radius: 6px; 
-                                        color: #eee; 
-                                        outline: none; 
-                                        cursor: pointer;
-                                        appearance: none; -webkit-appearance: none;"
-                                        onchange="FinanceModule.render()">
-                                        <option value="all">Tipo: Todos</option>
-                                        <option value="income">Entradas (Verde)</option>
-                                        <option value="expense">Saídas (Vermelho)</option>
-                                    </select>
-                                </div>
+                        </div>
 
-                                <div style="position: relative;">
-                                    <select id="filter-cat" class="form-control" style="
-                                        width: 100%; 
-                                        height: 35px; 
-                                        padding: 0 5px; 
-                                        margin: 0; 
-                                        font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
-                                        border: 1px solid rgba(255,255,255,0.1); 
-                                        border-radius: 6px; 
-                                        color: #eee; 
-                                        outline: none; 
-                                        cursor: pointer;
-                                        appearance: none; -webkit-appearance: none;"
-                                        onchange="FinanceModule.render()">
-                                        <option value="all">Cat: Todas</option>
-                                        <option value="Outros">📦 Outros</option>
-                                        <option value="Alimentação">🍔 Alimentação</option>
-                                        <option value="Transporte">🚗 Transporte</option>
-                                        <option value="Moradia">🏠 Moradia</option>
-                                        <option value="Educação">📚 Educação</option>
-                                        <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
-                                        <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
-                                        <option value="Compras">🛒 Compras</option>
-                                        <option value="Investimento">💰 Investimento</option>
-                                        <option value="Salário">💼 Salário/Renda</option>
-                                    </select>
-                                </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                            
+                            <div style="position: relative;">
+                                <select id="filter-type" class="form-control" style="
+                                    width: 100%; 
+                                    height: 35px; 
+                                    padding: 0 10px; 
+                                    margin: 0; 
+                                    font-size: 0.8rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    appearance: none;
+                                    -webkit-appearance: none;"
+                                    onchange="FinanceModule.render()">
+                                    <option value="all">Tipo: Todos</option>
+                                    <option value="income">Entradas (Verde)</option>
+                                    <option value="expense">Saídas (Vermelho)</option>
+                                </select>
+                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
+                            </div>
+
+                            <div style="position: relative;">
+                                <select id="filter-cat" class="form-control" style="
+                                    width: 100%; 
+                                    height: 35px; 
+                                    padding: 0 10px; 
+                                    margin: 0; 
+                                    font-size: 0.8rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    appearance: none;
+                                    -webkit-appearance: none;"
+                                    onchange="FinanceModule.render()">
+                                    <option value="all">Cat: Todas</option>
+                                    <option value="Outros">📦 Outros</option>
+                                    <option value="Alimentação">🍔 Alimentação</option>
+                                    <option value="Transporte">🚗 Transporte</option>
+                                    <option value="Moradia">🏠 Moradia</option>
+                                    <option value="Educação">📚 Educação</option>
+                                    <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                    <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                    <option value="Compras">🛒 Compras</option>
+                                    <option value="Investimento">💰 Investimento</option>
+                                    <option value="Salário">💼 Salário/Renda</option>
+                                </select>
+                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                             </div>
                         </div>
                     </div>
@@ -1684,7 +1685,7 @@
             
             if(!list || !select) return;
 
-            // --- Renderiza Contas ---
+            // --- Renderiza Contas (Mantido) ---
             list.innerHTML = '';
             const currentSelectedAcc = select.value;
             select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
@@ -1710,12 +1711,13 @@
             });
             if (currentSelectedAcc) select.value = currentSelectedAcc;
 
-            // --- RENDERIZAÇÃO DO HISTÓRICO ---
+            // --- RENDERIZAÇÃO DO HISTÓRICO (COM DUPLO FILTRO) ---
             const log = document.getElementById('transaction-log');
             
-            // Pega filtros
+            // Pega os valores dos DOIS filtros novos
             const typeFilterEl = document.getElementById('filter-type');
             const catFilterEl = document.getElementById('filter-cat');
+            
             const typeVal = typeFilterEl ? typeFilterEl.value : 'all';
             const catVal = catFilterEl ? catFilterEl.value : 'all';
 
@@ -1731,11 +1733,15 @@
                     return b.id - a.id; 
                 });
 
-                // 2. Filtrar
+                // 2. Filtrar (Lógica DUPLA: Tipo E Categoria)
                 const filteredTransactions = sortedTransactions.filter(t => {
                     const category = t.cat || 'Outros';
+                    
+                    // Verifica Tipo
                     const matchType = (typeVal === 'all') || (t.type === typeVal);
+                    // Verifica Categoria
                     const matchCat = (catVal === 'all') || (category === catVal);
+
                     return matchType && matchCat;
                 });
 
@@ -1746,9 +1752,6 @@
                     const sign = isIncome ? '+' : '-';
                     const category = t.cat || 'Outros';
                     const iconClass = this.getCategoryIcon(category);
-                    
-                    // TRATAMENTO DO NOME DO BANCO (Remove ' Banking' do nome)
-                    const displayBank = t.accName ? t.accName.replace(' Banking', '') : 'Conta';
 
                     log.innerHTML += `
                         <div class="habit-card-mini fade-in" style="
@@ -1772,7 +1775,7 @@
                                         ${t.date} • ${category}
                                     </span>
                                     <span style="font-size: 0.7rem; color: #888; font-weight: 500; display: block; margin-top: 2px;">
-                                        <i class="fas fa-university" style="font-size: 0.6rem; margin-right: 3px;"></i> ${displayBank}
+                                        <i class="fas fa-university" style="font-size: 0.6rem; margin-right: 3px;"></i> ${t.accName}
                                     </span>
                                 </div>
                             </div>
