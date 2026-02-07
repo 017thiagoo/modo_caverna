@@ -1077,61 +1077,35 @@
 
                     <div class="card-header" style="
                         display: flex; 
-                        flex-direction: column; 
-                        gap: 12px; 
-                        margin-bottom: 15px; 
-                        border-bottom: 1px solid rgba(255,255,255,0.05); 
-                        padding-bottom: 15px;">
+                        justify-content: space-between; 
+                        align-items: center; 
+                        flex-wrap: wrap; 
+                        gap: 10px; 
+                        margin-bottom: 15px;">
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <span class="card-title" style="margin: 0;">HISTÓRICO</span>
-                            <span style="font-size: 0.7rem; color: #666; font-weight: 600; text-transform: uppercase;">
-                                <i class="fas fa-filter" style="margin-right: 4px;"></i> Filtros
-                            </span>
-                        </div>
+                        <span class="card-title" style="margin: 0; white-space: nowrap;">HISTÓRICO</span>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label for="trans-history-filter" style="font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 600;">Filtrar:</label>
                             
-                            <div style="position: relative;">
-                                <select id="filter-type" class="form-control" style="
+                            <div style="position: relative; width: 105px;">
+                                <select id="trans-history-filter" class="form-control" style="
                                     width: 100%; 
-                                    height: 35px; 
-                                    padding: 0 10px; 
+                                    height: 28px; 
+                                    padding: 0 5px; 
                                     margin: 0; 
                                     font-size: 0.8rem; 
-                                    background: rgba(255,255,255,0.03); 
-                                    border: 1px solid rgba(255,255,255,0.1); 
-                                    border-radius: 6px; 
+                                    background: transparent; 
+                                    border: none; 
                                     color: #eee; 
-                                    outline: none; 
-                                    cursor: pointer;
-                                    appearance: none;
-                                    -webkit-appearance: none;"
+                                    outline: none;
+                                    cursor: pointer;"
                                     onchange="FinanceModule.render()">
-                                    <option value="all">Tipo: Todos</option>
-                                    <option value="income">Entradas (Verde)</option>
-                                    <option value="expense">Saídas (Vermelho)</option>
-                                </select>
-                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
-                            </div>
-
-                            <div style="position: relative;">
-                                <select id="filter-cat" class="form-control" style="
-                                    width: 100%; 
-                                    height: 35px; 
-                                    padding: 0 10px; 
-                                    margin: 0; 
-                                    font-size: 0.8rem; 
-                                    background: rgba(255,255,255,0.03); 
-                                    border: 1px solid rgba(255,255,255,0.1); 
-                                    border-radius: 6px; 
-                                    color: #eee; 
-                                    outline: none; 
-                                    cursor: pointer;
-                                    appearance: none;
-                                    -webkit-appearance: none;"
-                                    onchange="FinanceModule.render()">
-                                    <option value="all">Cat: Todas</option>
+                                    <option value="all">Todos</option>
+                                    <option disabled>──── TIPO ────</option>
+                                    <option value="income">Entradas</option>
+                                    <option value="expense">Saídas</option>
+                                    <option disabled>── CATEGORIA ──</option>
                                     <option value="Outros">📦 Outros</option>
                                     <option value="Alimentação">🍔 Alimentação</option>
                                     <option value="Transporte">🚗 Transporte</option>
@@ -1143,7 +1117,6 @@
                                     <option value="Investimento">💰 Investimento</option>
                                     <option value="Salário">💼 Salário/Renda</option>
                                 </select>
-                                <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                             </div>
                         </div>
                     </div>
@@ -1685,10 +1658,11 @@
             
             if(!list || !select) return;
 
-            // --- Renderiza Contas (Mantido) ---
+            // --- Renderiza Contas ---
             list.innerHTML = '';
             const currentSelectedAcc = select.value;
             select.innerHTML = '<option value="" disabled selected>Selecione a Conta</option>';
+            
             if (DB.state.banks.length === 0) list.innerHTML = '<p style="color:#666; text-align:center;">Nenhuma conta.</p>';
             
             DB.state.banks.forEach(b => {
@@ -1711,20 +1685,15 @@
             });
             if (currentSelectedAcc) select.value = currentSelectedAcc;
 
-            // --- RENDERIZAÇÃO DO HISTÓRICO (COM DUPLO FILTRO) ---
+            // --- RENDERIZAÇÃO DO HISTÓRICO (Estilo Cartão Colorido) ---
             const log = document.getElementById('transaction-log');
-            
-            // Pega os valores dos DOIS filtros novos
-            const typeFilterEl = document.getElementById('filter-type');
-            const catFilterEl = document.getElementById('filter-cat');
-            
-            const typeVal = typeFilterEl ? typeFilterEl.value : 'all';
-            const catVal = catFilterEl ? catFilterEl.value : 'all';
+            const filterEl = document.getElementById('trans-history-filter');
+            const filterVal = filterEl ? filterEl.value : 'all';
 
             if(log) {
                 log.innerHTML = '';
 
-                // 1. Ordenar
+                // Ordenar
                 const sortedTransactions = [...DB.state.transactions].sort((a, b) => {
                     const dateA = a.date.split('/').reverse().join('-');
                     const dateB = b.date.split('/').reverse().join('-');
@@ -1733,19 +1702,14 @@
                     return b.id - a.id; 
                 });
 
-                // 2. Filtrar (Lógica DUPLA: Tipo E Categoria)
+                // Filtrar
                 const filteredTransactions = sortedTransactions.filter(t => {
-                    const category = t.cat || 'Outros';
-                    
-                    // Verifica Tipo
-                    const matchType = (typeVal === 'all') || (t.type === typeVal);
-                    // Verifica Categoria
-                    const matchCat = (catVal === 'all') || (category === catVal);
-
-                    return matchType && matchCat;
+                    if (filterVal === 'all') return true;
+                    if (filterVal === 'income' || filterVal === 'expense') return t.type === filterVal;
+                    return (t.cat || 'Outros') === filterVal;
                 });
 
-                // 3. Renderizar
+                // Renderizar
                 filteredTransactions.slice(0, 30).forEach(t => {
                     const isIncome = t.type === 'income';
                     const colorCode = isIncome ? 'var(--color-success)' : 'var(--color-danger)';
@@ -1753,6 +1717,7 @@
                     const category = t.cat || 'Outros';
                     const iconClass = this.getCategoryIcon(category);
 
+                    // Estilo inspirado no habit-card-mini (Borda lateral colorida)
                     log.innerHTML += `
                         <div class="habit-card-mini fade-in" style="
                             border-left: 4px solid ${colorCode}; 
@@ -1765,7 +1730,17 @@
                             align-items: center;">
                             
                             <div style="display: flex; align-items: flex-start; flex: 1; min-width: 0;">
-                                <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-right: 12px; margin-top: 2px; flex-shrink: 0;">
+                                <div style="
+                                    width: 36px; 
+                                    height: 36px; 
+                                    border-radius: 8px; 
+                                    background: rgba(255,255,255,0.05); 
+                                    display: flex; 
+                                    align-items: center; 
+                                    justify-content: center; 
+                                    margin-right: 12px; 
+                                    margin-top: 2px;
+                                    flex-shrink: 0;">
                                     <i class="fas ${iconClass}" style="color: #888; font-size: 0.9rem;"></i>
                                 </div>
 
