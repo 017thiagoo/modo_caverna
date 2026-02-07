@@ -1086,29 +1086,31 @@
                         
                         <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
 
-                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
                             
-                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.75rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                 Filtrar por:
                             </span>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 300;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1;">
                                 
                                 <div style="position: relative; width: 100%;">
                                     <select id="filter-type" class="form-control" style="
-                                        width: 300px; 
-                                        height: 30px; 
-                                        line-height: 30px; 
-                                        padding: 0 25px 0 5px; 
+                                        width: 100%; 
+                                        height: 32px; 
+                                        line-height: 32px;
                                         margin: 0; 
+                                        /* O PULO DO GATO: Padding direito maior para acomodar a seta */
+                                        padding: 0 30px 0 10px; 
+                                        box-sizing: border-box; 
                                         font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
+                                        background: rgba(255,255,255,0.05); 
                                         border: 1px solid rgba(255,255,255,0.1); 
                                         border-radius: 6px; 
                                         color: #eee; 
                                         outline: none; 
                                         cursor: pointer;
-                                        text-align: center; 
+                                        text-align: center;
                                         text-align-last: center;
                                         -webkit-appearance: none;
                                         appearance: none;"
@@ -1119,30 +1121,31 @@
                                     </select>
                                     <i class="fas fa-sort" style="
                                         position: absolute; 
-                                        right: 15px; /* Empurra para dentro da caixa */
+                                        right: 10px; /* Distância da borda direita */
                                         top: 50%; 
                                         transform: translateY(-50%); 
-                                        font-size: 0.6rem; 
+                                        font-size: 0.7rem; 
                                         color: #666; 
-                                        pointer-events: none;
-                                        z-index: 10;"></i>
+                                        pointer-events: none;"></i>
                                 </div>
 
                                 <div style="position: relative; width: 100%;">
                                     <select id="filter-cat" class="form-control" style="
-                                        width: 300px; 
-                                        height: 30px; 
-                                        line-height: 30px; 
-                                        padding: 0 25px 0 5px; 
+                                        width: 100%; 
+                                        height: 32px; 
+                                        line-height: 32px;
                                         margin: 0; 
+                                        /* O PULO DO GATO: Padding direito maior para acomodar a seta */
+                                        padding: 0 30px 0 10px; 
+                                        box-sizing: border-box; 
                                         font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
+                                        background: rgba(255,255,255,0.05); 
                                         border: 1px solid rgba(255,255,255,0.1); 
                                         border-radius: 6px; 
                                         color: #eee; 
                                         outline: none; 
                                         cursor: pointer;
-                                        text-align: center; 
+                                        text-align: center;
                                         text-align-last: center;
                                         -webkit-appearance: none;
                                         appearance: none;"
@@ -1161,13 +1164,12 @@
                                     </select>
                                     <i class="fas fa-sort" style="
                                         position: absolute; 
-                                        right: 15px; /* Empurra para dentro da caixa */
+                                        right: 10px; /* Distância da borda direita */
                                         top: 50%; 
                                         transform: translateY(-50%); 
-                                        font-size: 0.6rem; 
+                                        font-size: 0.7rem; 
                                         color: #666; 
-                                        pointer-events: none;
-                                        z-index: 10;"></i>
+                                        pointer-events: none;"></i>
                                 </div>
                             </div>
                         </div>
