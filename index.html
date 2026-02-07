@@ -1078,47 +1078,73 @@
                     <div class="card-header" style="
                         display: flex; 
                         flex-direction: column; 
-                        align-items: flex-start; /* ISSO ALINHA O TÍTULO NA ESQUERDA */
-                        gap: 12px; 
+                        align-items: flex-start; /* Alinha tudo à esquerda */
+                        gap: 10px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
                         padding-bottom: 10px;">
                         
-                        <span class="card-title" style="margin: 0;">HISTÓRICO RECENTE</span>
+                        <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
 
                         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
                             
-                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap;">
+                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                 Filtrar por:
                             </span>
                             
-                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div style="display: flex; gap: 8px; flex: 1;">
                                 
-                                <div style="position: relative; width: 100%;">
-                                    <select id="filter-type" class="select-centralizado" style="width: 100%;" onchange="FinanceModule.render()">
-                                        <option value="all">Tipo: Todos</option>
-                                        <option value="income">Entradas</option>
-                                        <option value="expense">Saídas</option>
-                                    </select>
-                                    <i class="fas fa-caret-down" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
-                                </div>
+                                <select id="filter-type" class="form-control" style="
+                                    flex: 1; /* Estica para ocupar espaço */
+                                    height: 30px; 
+                                    padding: 0; 
+                                    margin: 0; 
+                                    font-size: 0.75rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    text-align: center; 
+                                    text-align-last: center;
+                                    appearance: none; /* Remove seta padrão */
+                                    -webkit-appearance: none;"
+                                    onchange="FinanceModule.render()">
+                                    <option value="all">Tipo: Todos</option>
+                                    <option value="income">Entradas</option>
+                                    <option value="expense">Saídas</option>
+                                </select>
 
-                                <div style="position: relative; width: 100%;">
-                                    <select id="filter-cat" class="select-centralizado" style="width: 100%;" onchange="FinanceModule.render()">
-                                        <option value="all">Cat: Todas</option>
-                                        <option value="Outros">📦 Outros</option>
-                                        <option value="Alimentação">🍔 Alimentação</option>
-                                        <option value="Transporte">🚗 Transporte</option>
-                                        <option value="Moradia">🏠 Moradia</option>
-                                        <option value="Educação">📚 Educação</option>
-                                        <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
-                                        <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
-                                        <option value="Compras">🛒 Compras</option>
-                                        <option value="Investimento">💰 Investimento</option>
-                                        <option value="Salário">💼 Salário/Renda</option>
-                                    </select>
-                                    <i class="fas fa-caret-down" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
-                                </div>
+                                <select id="filter-cat" class="form-control" style="
+                                    flex: 1; /* Estica para ocupar espaço */
+                                    height: 30px; 
+                                    padding: 0; 
+                                    margin: 0; 
+                                    font-size: 0.75rem; 
+                                    background: rgba(255,255,255,0.03); 
+                                    border: 1px solid rgba(255,255,255,0.1); 
+                                    border-radius: 6px; 
+                                    color: #eee; 
+                                    outline: none; 
+                                    cursor: pointer;
+                                    text-align: center; 
+                                    text-align-last: center;
+                                    appearance: none; /* Remove seta padrão */
+                                    -webkit-appearance: none;"
+                                    onchange="FinanceModule.render()">
+                                    <option value="all">Cat: Todas</option>
+                                    <option value="Outros">📦 Outros</option>
+                                    <option value="Alimentação">🍔 Alimentação</option>
+                                    <option value="Transporte">🚗 Transporte</option>
+                                    <option value="Moradia">🏠 Moradia</option>
+                                    <option value="Educação">📚 Educação</option>
+                                    <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
+                                    <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                    <option value="Compras">🛒 Compras</option>
+                                    <option value="Investimento">💰 Investimento</option>
+                                    <option value="Salário">💼 Salário/Renda</option>
+                                </select>
                             </div>
                         </div>
                     </div>
