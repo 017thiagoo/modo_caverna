@@ -1079,7 +1079,7 @@
                         display: flex; 
                         flex-direction: column; 
                         align-items: flex-start; 
-                        gap: 10px; 
+                        gap: 8px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
                         padding-bottom: 10px;">
@@ -1088,7 +1088,7 @@
 
                         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
                             
-                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.75rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
                                 Filtrar por:
                             </span>
                             
@@ -1097,12 +1097,13 @@
                                 <div style="position: relative; width: 100%;">
                                     <select id="filter-type" class="form-control" style="
                                         width: 100%; 
-                                        height: 30px; 
-                                        line-height: 30px; 
-                                        padding: 0 25px 0 5px; /* 25px na direita para o ícone não cobrir o texto */
+                                        height: 32px; 
+                                        line-height: 32px; 
                                         margin: 0; 
+                                        padding: 0 25px 0 5px; /* Espaço na direita para o ícone */
+                                        box-sizing: border-box; /* Garante que o padding fique dentro */
                                         font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
+                                        background: rgba(255,255,255,0.05); 
                                         border: 1px solid rgba(255,255,255,0.1); 
                                         border-radius: 6px; 
                                         color: #eee; 
@@ -1110,8 +1111,8 @@
                                         cursor: pointer;
                                         text-align: center; 
                                         text-align-last: center;
-                                        -webkit-appearance: none;
-                                        appearance: none;"
+                                        appearance: none; 
+                                        -webkit-appearance: none;"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Tipo: Todos</option>
                                         <option value="income">Entradas</option>
@@ -1123,19 +1124,20 @@
                                         top: 50%; 
                                         transform: translateY(-50%); 
                                         font-size: 0.7rem; 
-                                        color: #666; 
+                                        color: #888; 
                                         pointer-events: none;"></i>
                                 </div>
 
                                 <div style="position: relative; width: 100%;">
                                     <select id="filter-cat" class="form-control" style="
                                         width: 100%; 
-                                        height: 30px; 
-                                        line-height: 30px; 
-                                        padding: 0 25px 0 5px; /* 25px na direita para o ícone não cobrir o texto */
+                                        height: 32px; 
+                                        line-height: 32px;
                                         margin: 0; 
+                                        padding: 0 25px 0 5px; /* Espaço na direita para o ícone */
+                                        box-sizing: border-box; 
                                         font-size: 0.75rem; 
-                                        background: rgba(255,255,255,0.03); 
+                                        background: rgba(255,255,255,0.05); 
                                         border: 1px solid rgba(255,255,255,0.1); 
                                         border-radius: 6px; 
                                         color: #eee; 
@@ -1143,8 +1145,8 @@
                                         cursor: pointer;
                                         text-align: center; 
                                         text-align-last: center;
-                                        -webkit-appearance: none;
-                                        appearance: none;"
+                                        appearance: none; 
+                                        -webkit-appearance: none;"
                                         onchange="FinanceModule.render()">
                                         <option value="all">Cat: Todas</option>
                                         <option value="Outros">📦 Outros</option>
@@ -1164,7 +1166,7 @@
                                         top: 50%; 
                                         transform: translateY(-50%); 
                                         font-size: 0.7rem; 
-                                        color: #666; 
+                                        color: #888; 
                                         pointer-events: none;"></i>
                                 </div>
                             </div>
