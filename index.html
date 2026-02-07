@@ -1185,12 +1185,32 @@
                 
                 <div class="card-header" style="justify-content: space-between; margin-bottom: 20px;">
                     <span class="card-title">BACKLOG DE EXECUÇÃO</span>
-                    <select id="task-view-filter" class="form-control" style="width: auto; height: 35px; padding: 0 15px; font-size: 0.85rem;" onchange="TaskModule.render()">
-                        <option value="all">Todos</option>
-                        <option value="Diário">Diários</option>
-                        <option value="Semanal">Semanais</option>
-                        <option value="Mensal">Mensais</option>
-                    </select>
+                    <div style="position: relative;">
+                        <select id="task-view-filter" class="form-control" style="
+                            width: 150px; 
+                            height: 35px; 
+                            padding: 0 30px 0 10px; /* Espaço para seta */
+                            font-size: 0.85rem;
+                            text-align: center;
+                            text-align-last: center;
+                            appearance: none;
+                            -webkit-appearance: none;
+                            cursor: pointer;" 
+                            onchange="TaskModule.render()">
+                            <option value="all">Todas</option>
+                            <option value="today">Para Hoje</option>
+                            <option value="high">Alta Prioridade</option>
+                            <option value="low">Pode esperar</option>
+                        </select>
+                        <i class="fas fa-filter" style="
+                            position: absolute; 
+                            right: 10px; 
+                            top: 50%; 
+                            transform: translateY(-50%); 
+                            font-size: 0.7rem; 
+                            color: #666; 
+                            pointer-events: none;"></i>
+                    </div>
                 </div>
                 
                 <div style="height: 300px; margin-bottom: 25px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px;">
@@ -2241,6 +2261,7 @@
         },
         
         render() {
+            // Atualiza o gráfico se existir
             if(typeof ChartsModule !== 'undefined') ChartsModule.renderTaskPerformance();
 
             const list = document.getElementById('task-list-container');
@@ -2249,42 +2270,80 @@
             if(!list) return;
             list.innerHTML = '';
             
+            // Data de Hoje para comparações
+            const todayDate = new Date().toISOString().split('T')[0];
+
+            // 1. ORDENAÇÃO (Data Crescente > Prioridade Decrescente > Hora)
             const sortedTasks = [...DB.state.tasks].sort((a, b) => {
+                // Critério 1: Data (Vencidos e Hoje aparecem primeiro)
+                if (a.date !== b.date) {
+                    if (!a.date) return 1; // Sem data vai pro final
+                    if (!b.date) return -1;
+                    return a.date.localeCompare(b.date);
+                }
+
+                // Critério 2: Prioridade (HIGH > MED > LOW)
                 const pWeight = { 'HIGH': 3, 'MED': 2, 'LOW': 1 };
-                if (pWeight[b.prio] !== pWeight[a.prio]) return pWeight[b.prio] - pWeight[a.prio];
-                if (a.time && !b.time) return -1;
-                if (!a.time && b.time) return 1;
-                if (a.time && b.time) return a.time.localeCompare(b.time);
-                return 0;
+                if (pWeight[b.prio] !== pWeight[a.prio]) {
+                    return pWeight[b.prio] - pWeight[a.prio];
+                }
+
+                // Critério 3: Hora
+                return (a.time || '').localeCompare(b.time || '');
             });
+
+            let hasItems = false;
 
             sortedTasks.forEach((t) => {
                 const originalIndex = DB.state.tasks.indexOf(t);
-                const tarefaFreq = t.freq || 'Geral';
-                if (filter !== 'all' && tarefaFreq !== filter) return;
 
+                // 2. FILTROS INTELIGENTES
+                if (filter === 'today') {
+                    // Se não for a data de hoje, pula
+                    if (t.date !== todayDate) return;
+                }
+                else if (filter === 'high') {
+                    // Só mostra Alta Prioridade
+                    if (t.prio !== 'HIGH') return;
+                }
+                else if (filter === 'low') {
+                    // Só mostra Baixa Prioridade (Pode esperar)
+                    if (t.prio !== 'LOW') return;
+                }
+                // 'all' mostra tudo (nenhum return)
+
+                hasItems = true;
+
+                // Definição de Estilos
                 const prioClass = t.prio === 'HIGH' ? 'p-high' : (t.prio === 'MED' ? 'p-med' : 'p-low');
                 const checkIcon = t.done ? 'fa-check-circle' : 'fa-circle';
                 const checkColor = t.done ? 'var(--color-success)' : '#444';
                 const titleClass = t.done ? 'item-done' : '';
                 
-                // Formata Data/Hora
-                const timeStr = t.time ? t.time : '';
-                const dateStr = t.date ? t.date.split('-').reverse().join('/') : '';
+                // Formatação Data
+                let displayDate = '';
+                if (t.date) {
+                    const parts = t.date.split('-');
+                    const diaMes = `${parts[2]}/${parts[1]}`;
+                    // Se for hoje, escreve "Hoje"
+                    displayDate = (t.date === todayDate) ? 'Hoje' : diaMes;
+                }
                 
-                // HTML da data/hora (só aparece se existir)
-                // TRAVADO COM white-space:nowrap E COR VERMELHA (var(--color-primary))
                 let dateTimeHTML = '';
-                if(dateStr || timeStr) {
-                    dateTimeHTML = `<small style="color:var(--color-primary); font-weight:600; white-space:nowrap; margin-left: 6px;">${dateStr} ${timeStr}</small>`;
+                if(displayDate || t.time) {
+                    dateTimeHTML = `<small style="color:var(--color-primary); font-weight:600; white-space:nowrap; margin-left: 6px;">
+                        <i class="far fa-calendar" style="font-size:0.7rem; margin-right:2px;"></i> ${displayDate} ${t.time || ''}
+                    </small>`;
                 }
 
-                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Concluído</span>' : '';
-
+                const statusBadge = t.done ? '<span class="cat-badge" style="background:var(--color-success); color:#000;">Feito</span>' : '';
+                
+                // Botão calendário
                 const calendarBtn = (t.date && t.time && !t.done) 
                     ? `<button onclick="TaskModule.exportToCalendar(${originalIndex})" style="background:none; border:none; color:var(--color-primary); cursor:pointer; padding:0; margin-right:-3px;"><i class="fas fa-calendar-plus" style="font-size: 1.1rem;"></i></button>` 
                     : '';
 
+                // Renderiza o Item
                 list.innerHTML += `
                     <div class="task-item fade-in">
                         <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
@@ -2293,9 +2352,9 @@
                                 <i class="far ${checkIcon}" onclick="TaskModule.toggle(${originalIndex})" style="color:${checkColor}; cursor:pointer; font-size:1.5rem; flex-shrink:0;"></i>
                                 <div style="min-width:0;">
                                     <span class="${titleClass}" style="font-weight:600; display:block; word-break:break-word;">${t.desc}</span>
-                                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin-top:2px;">
+                                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin-top:4px;">
                                         <span class="priority-badge mono ${prioClass}" style="font-size:0.6rem; padding:1px 4px;">${t.prio}</span>
-                                        <span class="cat-badge" style="font-size:0.6rem;">${tarefaFreq}</span>
+                                        <span class="cat-badge" style="font-size:0.6rem;">${t.freq || 'Geral'}</span>
                                         ${statusBadge}
                                         ${dateTimeHTML}
                                     </div>
@@ -2313,7 +2372,7 @@
                 `;
             });
 
-            if(list.innerHTML === '') list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada.</div>';
+            if(!hasItems) list.innerHTML = '<div class="empty-state">Nenhuma tarefa encontrada neste filtro.</div>';
         }
     };
 
