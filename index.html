@@ -577,32 +577,33 @@
             .habit-day-col.weekend .day-check {
                 border-color: rgba(239, 68, 68, 0.4); /* Borda avermelhada suave */
             }
-            /* Classe específica para forçar centralização total nos filtros */
-            .select-centralizado {
-                text-align: center !important;
-                text-align-last: center !important; /* Essencial para Chrome/Safari mobile */
-                -moz-text-align-last: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                height: 28px !important;
-                line-height: 28px !important; /* Centraliza verticalmente */
-                appearance: none !important; /* Remove seta padrão feia */
-                -webkit-appearance: none !important;
-                background-color: rgba(255, 255, 255, 0.03) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                border-radius: 6px !important;
-                color: #eee !important;
-                font-size: 0.75rem !important;
-                width: 100% !important;
-                outline: none !important;
-                cursor: pointer !important;
+
+            /* --- CORREÇÃO DO SCROLL E BODY --- */
+            html, body {
+                height: 100%;
+                width: 100%;
+                overflow: hidden; /* Apenas o main-content rola */
+                background-color: var(--color-bg-body);
+                /* REMOVIDO: position: fixed (isso causava o bug) */
+                /* REMOVIDO: overscroll-behavior (opcional, mas melhor sem para evitar bugs visuais) */
             }
-            
-            /* Ajuste fino para as options */
-            .select-centralizado option {
-                background-color: #1a1a1a;
-                color: #fff;
+
+            /* Classe para centralizar texto dos selects perfeitamente */
+            .select-centralizado {
                 text-align: center;
+                text-align-last: center; /* Obrigatório para Safari/iOS */
+                -moz-text-align-last: center;
+                text-indent: 5px; /* Pequeno ajuste visual */
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 6px;
+                color: #eee;
+                font-size: 0.75rem;
+                height: 30px;
+                width: 100%;
+                appearance: none;
+                -webkit-appearance: none;
+                outline: none;
             }
         }
         
@@ -1105,23 +1106,22 @@
                     <div class="card-header" style="
                         display: flex; 
                         flex-direction: column; 
-                        align-items: flex-start; 
-                        gap: 10px; 
+                        gap: 12px; 
                         margin-bottom: 15px; 
                         border-bottom: 1px solid rgba(255,255,255,0.05); 
                         padding-bottom: 15px;">
                         
-                        <span class="card-title" style="margin: 0; width: 100%;">HISTÓRICO RECENTE</span>
+                        <span class="card-title" style="margin: 0;">HISTÓRICO RECENTE</span>
 
                         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
                             
-                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.7rem; color: #888; font-weight: 600; white-space: nowrap;">
                                 Filtrar por:
                             </span>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1;">
+                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                                 
-                                <div style="position: relative; width: 100%;">
+                                <div style="position: relative;">
                                     <select id="filter-type" class="select-centralizado" onchange="FinanceModule.render()">
                                         <option value="all">Tipo: Todos</option>
                                         <option value="income">Entradas</option>
@@ -1130,7 +1130,7 @@
                                     <i class="fas fa-caret-down" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                                 </div>
 
-                                <div style="position: relative; width: 100%;">
+                                <div style="position: relative;">
                                     <select id="filter-cat" class="select-centralizado" onchange="FinanceModule.render()">
                                         <option value="all">Cat: Todas</option>
                                         <option value="Outros">📦 Outros</option>
@@ -1138,15 +1138,16 @@
                                         <option value="Transporte">🚗 Transporte</option>
                                         <option value="Moradia">🏠 Moradia</option>
                                         <option value="Educação">📚 Educação</option>
-                                        <option value="Lazer/Assinaturas">🎬 Lazer/Assinaturas</option>
-                                        <option value="Saúde/Cuidados">💊 Saúde/Cuidados</option>
+                                        <option value="Lazer/Assinaturas">🎬 Lazer</option>
+                                        <option value="Saúde/Cuidados">💊 Saúde</option>
                                         <option value="Compras">🛒 Compras</option>
                                         <option value="Investimento">💰 Investimento</option>
-                                        <option value="Salário">💼 Salário/Renda</option>
+                                        <option value="Salário">💼 Salário</option>
                                     </select>
                                     <i class="fas fa-caret-down" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; color: #666; pointer-events: none;"></i>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                     <div id="transaction-log" class="transaction-list"></div>
